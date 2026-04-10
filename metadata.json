@@ -1,0 +1,5 @@
+{
+  "name": "Clock-Me",
+  "description": "A productivity and time-tracking tool for software developers to measure task efficiency and sprint velocity.",
+  "requestFramePermissions": []
+}

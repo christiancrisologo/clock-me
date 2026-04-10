@@ -1,0 +1,19 @@
+{
+  "hoursPerPoint": 8,
+  "taskTypes": [
+    "Development",
+    "Testing",
+    "Code Review",
+    "Investigation",
+    "Tech-Debt",
+    "Docs"
+  ],
+  "taskStatuses": [
+    "To do",
+    "In progress",
+    "Code Review",
+    "Testing",
+    "Done"
+  ],
+  "autoSync": true
+}
