@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Task, Sprint } from '../types';
 import { AUTO_SYNC_DEFAULT } from '../constants';
