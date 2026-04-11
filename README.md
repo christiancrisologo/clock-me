@@ -1,7 +1,6 @@
 # Clock-Me 🕒
 
 <div align="center">
-  <img alt="Clock-Me Hero" src="clock_me_hero_1775816359140.png" width="100%" />
   <p><em>The ultimate productivity and time-tracking companion for modern software developers.</em></p>
 </div>
 
@@ -9,7 +8,7 @@
 
 ## 🚀 Overview
 
-**Clock-Me** is a premium, high-performance web application designed specifically for developers to measure task efficiency, track internal development phases, and visualize sprint velocity. Built with a focus on rich aesthetics and micro-interactions, it transforms mundane time tracking into a data-driven experience.
+**Clock-Me** is high-performance web application designed specifically for developers to measure task efficiency, track internal development phases, and visualize sprint velocity. Built with a focus on rich aesthetics and micro-interactions, it transforms mundane time tracking into a data-driven experience.
 
 ## ✨ Key Features
 
