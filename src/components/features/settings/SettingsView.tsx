@@ -1,14 +1,15 @@
-import React from 'react';
-import { 
-  Database, 
-  Cloud, 
-  CloudOff, 
-  RefreshCw, 
-  Save, 
+import React, { useState } from 'react';
+import {
+  Database,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  Save,
   Download,
   Upload,
-  ChevronRight, 
-  Info 
+  ChevronRight,
+  Info,
+  User
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Button } from '../../ui/Button';
@@ -36,6 +37,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onExport,
   onImport
 }) => {
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   return (
     <div className="max-w-4xl mx-auto">
@@ -73,8 +75,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {isSupabaseOnline 
-                  ? 'Successfully connected to Supabase. Cloud sync is active.' 
+                {isSupabaseOnline
+                  ? 'Successfully connected to Supabase. Cloud sync is active.'
                   : 'Could not connect to Supabase. Changes are being saved locally.'}
               </p>
             </div>
@@ -87,7 +89,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
                   <p className="font-bold text-slate-900">Auto-Sync</p>
                 </div>
-                <button 
+                <button
                   onClick={() => isSupabaseOnline && setAutoSync(!autoSync)}
                   disabled={!isSupabaseOnline}
                   className={cn(
@@ -111,8 +113,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="space-y-4">
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Manual Synchronization</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => onSync()}
                 disabled={!isSupabaseOnline || isSyncing}
                 className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white"
@@ -126,8 +128,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </Button>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => onSync(true)}
                 disabled={!isSupabaseOnline || isSyncing}
                 className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white"
@@ -151,7 +153,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="space-y-4">
             <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Data Management</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={onExport}
                 className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group bg-white"
@@ -166,10 +168,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </Button>
 
               <>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
                   accept=".csv"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -177,7 +179,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     e.target.value = '';
                   }}
                 />
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
                   className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group bg-white"
@@ -193,6 +195,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </>
             </div>
           </div>
+
 
           {!isSupabaseConfigured && (
             <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-4">
@@ -217,8 +220,67 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
             </div>
           )}
+
+          <div className="pt-4 border-t border-slate-100">
+            <button
+              onClick={() => setIsAboutOpen(true)}
+              className="group flex items-center gap-3 text-left w-full hover:bg-slate-50 p-4 rounded-xl transition-all"
+            >
+              <div className="p-2 bg-slate-100 text-slate-500 rounded-lg group-hover:bg-brand-100 group-hover:text-brand-600 transition-colors">
+                <User size={18} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">About the Author</p>
+                <p className="text-[10px] text-slate-400">Discover more about Clock-Me and its creator</p>
+              </div>
+              <ChevronRight size={16} className="ml-auto text-slate-300 group-hover:text-brand-600 transition-colors" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {isAboutOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="relative h-24 bg-brand-600 overflow-hidden">
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute -top-12 -left-12 w-32 h-32 bg-white rounded-full" />
+                <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white rounded-full" />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Database size={40} className="text-white/20" />
+              </div>
+            </div>
+
+            <div className="relative -mt-12 px-8 pb-8">
+              <div className="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-4 mx-auto border-4 border-white">
+                <div className="w-full h-full bg-slate-50 rounded-xl flex items-center justify-center text-brand-600 font-black text-2xl">
+                  CC
+                </div>
+              </div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Christian Crisologo</h3>
+                <p className="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 inline-block px-3 py-1 rounded-full">Senior Software Engineer</p>
+
+                <div className="pt-4 text-sm text-slate-600 leading-relaxed font-medium">
+                  Author of Clock-Me, focusing on high-performance developer tools and rich productivity experiences.
+                </div>
+
+                <div className="pt-6 flex gap-3">
+                  <Button
+                    variant="primary"
+                    className="w-full text-xs font-black h-12 rounded-xl shadow-lg shadow-brand-100"
+                    onClick={() => setIsAboutOpen(false)}
+                  >
+                    Close Dialog
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
