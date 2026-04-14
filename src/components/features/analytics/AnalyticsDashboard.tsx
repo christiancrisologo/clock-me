@@ -12,16 +12,23 @@ import {
 import { Task, Sprint } from '../../../types';
 import { InfoTooltip } from '../../ui/InfoTooltip';
 
+import { RefreshCw } from 'lucide-react';
+import { Button } from '../../ui/Button';
+
 interface AnalyticsDashboardProps {
   sprintTasks: Task[];
   currentSprint?: Sprint;
   efficiency: number;
+  onSync: () => void;
+  isSyncing: boolean;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   sprintTasks,
   currentSprint,
-  efficiency
+  efficiency,
+  onSync,
+  isSyncing
 }) => {
   const totalTimeSpent = sprintTasks.reduce((acc, t) => acc + t.totalSeconds, 0);
   const completedTasks = sprintTasks.filter(t => t.status.toLowerCase() === 'done');
@@ -46,13 +53,25 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               <BarChart3 size={20} className="text-brand-600" />
               Sprint Time Distribution
             </h3>
-            <div className="flex gap-2">
-              <span className="flex items-center gap-1 text-xs text-slate-500">
-                <div className="w-2 h-2 bg-brand-500 rounded-full" /> Actual
-              </span>
-              <span className="flex items-center gap-1 text-xs text-slate-500">
-                <div className="w-2 h-2 bg-slate-200 rounded-full" /> Estimated
-              </span>
+            <div className="flex items-center gap-6">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onSync}
+                disabled={isSyncing}
+                className="gap-2 text-xs font-bold border-slate-200"
+              >
+                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                {isSyncing ? 'Syncing...' : 'Sync Now'}
+              </Button>
+              <div className="flex gap-4">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div className="w-1.5 h-1.5 bg-brand-500 rounded-full" /> Actual
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div className="w-1.5 h-1.5 bg-slate-200 rounded-full" /> Estimated
+                </span>
+              </div>
             </div>
           </div>
           <div className="h-80">

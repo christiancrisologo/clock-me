@@ -5,7 +5,8 @@ import {
   CloudOff, 
   RefreshCw, 
   Save, 
-  Download, 
+  Download,
+  Upload,
   ChevronRight, 
   Info 
 } from 'lucide-react';
@@ -21,6 +22,7 @@ interface SettingsViewProps {
   lastSyncTime: number | null;
   onSync: (forcePush?: boolean) => void;
   onExport: () => void;
+  onImport: (file: File) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -31,8 +33,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   setAutoSync,
   lastSyncTime,
   onSync,
-  onExport
+  onExport,
+  onImport
 }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -145,23 +149,49 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
 
           <div className="space-y-4">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Data Export</h4>
-            <Button 
-              variant="outline"
-              onClick={onExport}
-              className="w-full flex items-center justify-between p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group bg-white"
-            >
-              <div className="flex items-center gap-4">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Data Management</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button 
+                variant="outline"
+                onClick={onExport}
+                className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group bg-white"
+              >
                 <div className="p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105">
                   <Download size={24} className="text-slate-400 group-hover:text-brand-600" />
                 </div>
                 <div className="text-left">
                   <p className="font-bold text-slate-900">Export to CSV</p>
-                  <p className="text-[10px] text-slate-500 font-medium">Download all tasks and performance analytics</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Download all your tasks</p>
                 </div>
-              </div>
-              <ChevronRight size={20} className="text-slate-300 group-hover:text-brand-600 transition-colors" />
-            </Button>
+              </Button>
+
+              <>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept=".csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) onImport(file);
+                    e.target.value = '';
+                  }}
+                />
+                <Button 
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group bg-white"
+                >
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105">
+                    <Upload size={24} className="text-slate-400 group-hover:text-brand-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-slate-900">Import from CSV</p>
+                    <p className="text-[10px] text-slate-500 font-medium">Bulk generate tasks</p>
+                  </div>
+                </Button>
+              </>
+            </div>
           </div>
 
           {!isSupabaseConfigured && (

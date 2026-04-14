@@ -12,8 +12,11 @@ import { useTasks } from './hooks/useTasks';
 import { useSync } from './hooks/useSync';
 import { useTimer } from './hooks/useTimer';
 import { useUIState } from './hooks/useUIState';
-import { VIEWS } from './constants';
+import { VIEWS, LS_NAME_TASK } from './constants';
 import { Task } from './types';
+
+import { calculateSprintMetrics } from './utils/metrics';
+import { parseTasksFromCSV } from './utils/csv';
 
 export default function App() {
   // UI State
@@ -31,50 +34,51 @@ export default function App() {
   // Domain State
   const { sprints, setSprints, currentSprint } = useSprints();
   
-  // Sync logic needs setSprints and setTasks (which comes from useTasks)
-  // To solve the circular dependency, we initialize them carefully
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('clock-me-tasks');
-    const parsed = saved ? JSON.parse(saved) : [];
-    return parsed.map((t: any) => ({
-      ...t,
-      updatedAt: t.updatedAt || t.createdAt || Date.now()
-    }));
-  });
+  // 1. Initialize Sync state first to get setAutoSync and autoSync
+  const [autoSync, setAutoSync] = useState(true);
 
+  // 2. We use a ref for sync handlers to avoid circular dependency
+  const syncHandlersRef = React.useRef<{
+    pushTaskToSupabase?: (task: Task) => Promise<void>;
+    deleteTaskFromSupabase?: (taskId: string) => Promise<void>;
+    syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
+  }>({});
+  
+  // This hook now manages the 'tasks' state internally
+  const taskHook = useTasks(syncHandlersRef.current, autoSync);
+  const { 
+    tasks, 
+    setTasks, 
+    activeTaskIds, 
+    addTask, 
+    addTasks, 
+    updateTask, 
+    toggleTimer, 
+    updateTaskStatus, 
+    deleteTask 
+  } = taskHook;
+
+  const sync = useSync(tasks, setTasks, sprints, setSprints);
   const {
     isSupabaseOnline,
     isSyncing,
-    autoSync,
-    setAutoSync,
     lastSyncTime,
     syncWithSupabase,
     pushTaskToSupabase,
     deleteTaskFromSupabase
-  } = useSync(tasks, setTasks, sprints, setSprints);
+  } = sync;
 
-  const {
-    activeTaskIds,
-    addTask,
-    updateTask,
-    toggleTimer,
-    updateTaskStatus,
-    deleteTask
-  } = useTasks(
-    { pushTaskToSupabase, deleteTaskFromSupabase, syncWithSupabase },
-    autoSync
-  );
+  // 3. Update the ref with current handlers from useSync
+  React.useEffect(() => {
+    syncHandlersRef.current = {
+      pushTaskToSupabase,
+      deleteTaskFromSupabase,
+      syncWithSupabase
+    };
+  }, [pushTaskToSupabase, deleteTaskFromSupabase, syncWithSupabase]);
 
-  // Re-sync tasks from useTasks back to our local state which is shared with useSync
-  // Actually, we can just use the state from useTasks if we restructure slightly, 
-  // but for a quick refactor this bridge works.
-  // Better: Let useTasks manage the tasks and pass them down.
-  
   // Custom Timer Hook
   useTimer(activeTaskIds, setTasks);
-
-  // Sync tasks state between hooks (useTasks returns the state it manages)
-  // We'll update useSync to take the direct state and setter.
   
   const handleTaskSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -101,6 +105,25 @@ export default function App() {
       addTask(data);
       setIsAddingTask(false);
     }
+  };
+
+  const handleImportCSV = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        const importedTasks = parseTasksFromCSV(content);
+        if (importedTasks.length > 0) {
+          // Map sprint names to sprint IDs if they exist
+          const mappedTasks = importedTasks.map(t => ({
+            ...t,
+            sprintId: sprints.find(s => s.name === t.sprintName)?.id || ''
+          }));
+          addTasks(mappedTasks);
+        }
+      }
+    };
+    reader.readAsText(file);
   };
 
   const exportToCSV = () => {
@@ -160,6 +183,7 @@ export default function App() {
             setAddingTaskType(type);
             setIsAddingTask(true);
           }}
+          onSave={() => syncWithSupabase()}
           productivityPeriod={productivityPeriod}
           setProductivityPeriod={setProductivityPeriod}
         />
@@ -190,14 +214,9 @@ export default function App() {
             <AnalyticsDashboard 
               sprintTasks={sprintTasks}
               currentSprint={currentSprint}
-              efficiency={(() => {
-                const totalEst = sprintTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
-                const devSec = sprintTasks.reduce((acc, t) => {
-                  if (t.classification === 'sprintly') return acc + (t.phaseSeconds['In progress'] || 0);
-                  return acc + t.totalSeconds;
-                }, 0);
-                return totalEst > 0 ? (sprintTasks.filter(t => t.status.toLowerCase() === 'done').reduce((acc, t) => acc + t.estimatedHours, 0) / (devSec / 3600 || 1)) : 0;
-              })()}
+              efficiency={calculateSprintMetrics(tasks, currentSprint?.id).efficiency}
+              onSync={syncWithSupabase}
+              isSyncing={isSyncing}
             />
           )}
 
@@ -215,6 +234,7 @@ export default function App() {
               lastSyncTime={lastSyncTime}
               onSync={syncWithSupabase}
               onExport={exportToCSV}
+              onImport={handleImportCSV}
             />
           )}
         </div>

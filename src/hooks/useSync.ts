@@ -21,6 +21,10 @@ export const useSync = (
         return;
       }
       try {
+        if (!supabase) {
+          setIsSupabaseOnline(false);
+          return;
+        }
         const { error } = await supabase.from('tasks').select('id').limit(1);
         setIsSupabaseOnline(!error);
       } catch (e) {
@@ -44,15 +48,20 @@ export const useSync = (
   }, []);
 
   const syncWithSupabase = async (forcePush = false) => {
-    if (!isSupabaseConfigured || !navigator.onLine) return;
+    if (!isSupabaseConfigured || !navigator.onLine || !supabase) {
+      setIsSupabaseOnline(false);
+      return;
+    }
     setIsSyncing(true);
     try {
       const { data: remoteTasks, error: tasksError } = await supabase.from('tasks').select('*');
       const { data: remoteSprints, error: sprintsError } = await supabase.from('sprints').select('*');
 
       if (tasksError || sprintsError) {
+        console.warn('Sync failed - status check:', tasksError || sprintsError);
         setIsSupabaseOnline(false);
-        throw tasksError || sprintsError;
+        setIsSyncing(false);
+        return;
       }
 
       setIsSupabaseOnline(true);
@@ -90,10 +99,10 @@ export const useSync = (
   };
 
   const pushTaskToSupabase = async (task: Task) => {
-    if (isSupabaseConfigured && navigator.onLine && autoSync) {
+    if (isSupabaseConfigured && navigator.onLine && autoSync && supabase) {
       try {
         const { error } = await supabase.from('tasks').upsert(task);
-        setIsSupabaseOnline(!error);
+        if (error) setIsSupabaseOnline(false);
       } catch (error) {
         setIsSupabaseOnline(false);
       }
@@ -101,10 +110,10 @@ export const useSync = (
   };
 
   const deleteTaskFromSupabase = async (taskId: string) => {
-    if (isSupabaseConfigured && navigator.onLine && autoSync) {
+    if (isSupabaseConfigured && navigator.onLine && autoSync && supabase) {
       try {
         const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-        setIsSupabaseOnline(!error);
+        if (error) setIsSupabaseOnline(false);
       } catch (error) {
         setIsSupabaseOnline(false);
       }

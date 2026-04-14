@@ -7,7 +7,8 @@ import {
   Plus,
   ChevronDown,
   Circle,
-  Zap
+  Zap,
+  Save
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { AppView, VIEWS } from '../../constants';
@@ -20,6 +21,7 @@ interface HeaderProps {
   isSupabaseOnline: boolean;
   isSyncing: boolean;
   onAddTask: (type: 'regular' | 'sprintly') => void;
+  onSave?: () => void;
   productivityPeriod?: 'day' | 'week' | 'month';
   setProductivityPeriod?: (period: 'day' | 'week' | 'month') => void;
 }
@@ -31,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSupabaseOnline,
   isSyncing,
   onAddTask,
+  onSave,
   productivityPeriod,
   setProductivityPeriod
 }) => {
@@ -75,6 +78,19 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
+        {onSave && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSave}
+            disabled={isSyncing}
+            title="Save and Sync"
+            className="p-2 hover:bg-slate-50 text-slate-500"
+          >
+            <Save size={18} className={isSyncing ? 'animate-pulse' : ''} />
+          </Button>
+        )}
+
         {view === VIEWS.SETTINGS && !isSupabaseOnline && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100">
             <CloudOff size={14} className="text-amber-600" />
