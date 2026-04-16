@@ -30,6 +30,7 @@ export interface Task {
   createdAt: number;
   updatedAt: number;
   targetDate?: string;
+  link?: string;
 }
 
 export interface Sprint {

@@ -19,6 +19,7 @@ export const parseTasksFromCSV = (content: string): Partial<Task>[] => {
       switch (header) {
         case 'Title': task.title = val.replace(/^"|"$/g, '').replace(/""/g, '"'); break;
         case 'JIRA ID': task.jiraId = val; break;
+        case 'Reference Link': task.link = val; break;
         case 'Status': task.status = val; break;
         case 'Type': task.type = val; break;
         case 'Classification': task.classification = val; break;

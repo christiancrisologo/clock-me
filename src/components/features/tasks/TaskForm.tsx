@@ -93,15 +93,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sprint</label>
-                <select 
+                <input 
                   name="sprintName"
+                  list="sprint-suggestions"
                   defaultValue={task?.sprintName || sprints.find(s => s.isCurrent)?.name}
+                  placeholder="e.g. Sprint 24"
                   className="w-full text-sm font-bold border border-slate-200 rounded-xl px-4 py-3 bg-white outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition-all appearance-none cursor-pointer"
-                >
+                />
+                <datalist id="sprint-suggestions">
                   {sprints.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
+                    <option key={s.id} value={s.name} />
                   ))}
-                </select>
+                </datalist>
               </div>
             </div>
 
@@ -137,6 +140,16 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 />
               </div>
             )}
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Reference Link (Optional)</label>
+              <input 
+                name="link"
+                defaultValue={task?.link}
+                placeholder="https://github.com/v1/..."
+                className="w-full text-sm font-bold border border-slate-200 rounded-xl px-4 py-3 bg-white outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition-all placeholder:text-slate-300"
+              />
+            </div>
           </div>
 
           <div className="pt-4 flex gap-3">

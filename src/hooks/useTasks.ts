@@ -111,7 +111,8 @@ export const useTasks = (
         sprintName: taskData.sprintName || '',
         createdAt: taskData.createdAt || Date.now(),
         updatedAt: Date.now(),
-        targetDate: taskData.targetDate
+        targetDate: taskData.targetDate,
+        link: taskData.link
       };
     });
 

@@ -8,7 +8,8 @@ import {
   Trash2, 
   Target, 
   Clock, 
-  TrendingUp 
+  TrendingUp,
+  ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, formatTimeDisplay, formatDuration } from '../../../lib/utils';
@@ -152,6 +153,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sprint</p>
                     <p className="text-xs font-bold text-slate-700">{task.sprintName}</p>
                   </div>
+                )}
+                {task.link && (
+                  <a 
+                    href={task.link.startsWith('http') ? task.link : `https://${task.link}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-white px-2 py-1 rounded border border-slate-200 hover:border-brand-500 hover:bg-brand-50 transition-all flex items-center gap-1.5 group/link"
+                  >
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest group-hover/link:text-brand-600">Link</p>
+                    <ExternalLink size={12} className="text-slate-400 group-hover/link:text-brand-600" />
+                  </a>
                 )}
               </div>
               

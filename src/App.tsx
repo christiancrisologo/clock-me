@@ -89,9 +89,10 @@ export default function App() {
       type: formData.get('type') as string,
       estimatedPoints: Number(formData.get('estimatedPoints')),
       sprintName: formData.get('sprintName') as string,
-      sprintId: sprints.find(s => s.name === formData.get('sprintName'))?.id,
+      sprintId: sprints.find(s => s.name === formData.get('sprintName'))?.id || '',
       targetDate: formData.get('targetDate') as string || undefined,
       createdAt: formData.get('createdAt') ? new Date(formData.get('createdAt') as string).getTime() : undefined,
+      link: formData.get('link') as string || undefined,
       classification: addingTaskType
     };
 
@@ -128,7 +129,7 @@ export default function App() {
 
   const exportToCSV = () => {
     const headers = [
-      'ID', 'Title', 'JIRA ID', 'Status', 'Type', 'Classification', 'Sprint Name',
+      'ID', 'Title', 'JIRA ID', 'Reference Link', 'Status', 'Type', 'Classification', 'Sprint Name',
       'Estimated Points', 'Estimated Hours', 'Total Seconds', 'Total Hours',
       'Created At', 'Updated At'
     ];
@@ -137,6 +138,7 @@ export default function App() {
       t.id,
       `"${t.title.replace(/"/g, '""')}"`,
       t.jiraId || '',
+      t.link || '',
       t.status,
       t.type,
       t.classification,
