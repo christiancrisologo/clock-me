@@ -1,3 +1,4 @@
+import { Task } from '../types';
 import config from '../config.json';
 
 export const parseTasksFromCSV = (content: string): Partial<Task>[] => {
