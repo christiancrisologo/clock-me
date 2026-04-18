@@ -77,6 +77,7 @@ export const useTasks = (
 
   const addTasks = async (taskDatas: Partial<Task>[]) => {
     // 1. Filter out duplicates from the incoming data and existing state
+    const duplicateCount = { val: 0 };
     const filteredTaskDatas = taskDatas.filter(newData => {
       // Check if task with same jiraId (if exists) or same title already exists in current state
       const isDuplicate = tasks.some(existing => {
@@ -85,17 +86,21 @@ export const useTasks = (
         }
         return newData.title === existing.title;
       });
+      
+      if (isDuplicate) duplicateCount.val++;
       return !isDuplicate;
     });
 
-    if (filteredTaskDatas.length === 0) return;
+    if (filteredTaskDatas.length === 0) {
+      return { addedCount: 0, duplicateCount: duplicateCount.val };
+    }
 
     const newTasks: Task[] = filteredTaskDatas.map(taskData => {
       const pts = taskData.estimatedPoints || 0;
       const hrs = pts * HOURS_PER_POINT;
       
       return {
-        id: crypto.randomUUID(), // Always generate a new UUID for imported tasks as requested
+        id: taskData.id || crypto.randomUUID(), // Always generate a new UUID for imported tasks as requested
         title: taskData.title || 'Untitled Task',
         jiraId: taskData.jiraId || '',
         status: taskData.status || TASK_STATUSES[0],
@@ -122,6 +127,8 @@ export const useTasks = (
     for (const task of newTasks) {
       await syncHandlers?.pushTaskToSupabase?.(task);
     }
+
+    return { addedCount: newTasks.length, duplicateCount: duplicateCount.val };
   };
 
   const updateTask = (taskId: string, updates: Partial<Task>) => {

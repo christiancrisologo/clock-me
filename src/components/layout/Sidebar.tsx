@@ -23,11 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   currentView,
   setView,
-  currentSprint,
-  completedTasksCount,
-  totalTasksInSprint
 }) => {
-  const sprintProgress = Math.min(100, (completedTasksCount / (totalTasksInSprint || 1)) * 100);
 
   return (
     <aside className={cn(
@@ -72,19 +68,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => setView(VIEWS.SETTINGS)}
         />
       </nav>
-
-      <div className="p-4 border-t border-slate-100">
-        <div className="bg-slate-50 rounded-xl p-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Sprint</p>
-          <p className="text-sm font-bold text-slate-700 truncate">{currentSprint?.name}</p>
-          <div className="mt-2 w-full bg-slate-200 rounded-full h-1.5">
-            <div
-              className="bg-brand-500 h-1.5 rounded-full transition-all duration-1000"
-              style={{ width: `${sprintProgress}%` }}
-            />
-          </div>
-        </div>
-      </div>
     </aside>
   );
 };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Task, Sprint } from '../../../types';
-import { TASK_TYPES } from '../../../constants';
+import { TASK_TYPES, TASK_STATUSES } from '../../../constants';
 import { Button } from '../../ui/Button';
 
 interface TaskFormProps {
@@ -105,6 +105,32 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                     <option key={s.id} value={s.name} />
                   ))}
                 </datalist>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+                <select 
+                  name="status"
+                  defaultValue={task?.status || 'To do'}
+                  className="w-full text-sm font-bold border border-slate-200 rounded-xl px-4 py-3 bg-white outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition-all appearance-none cursor-pointer"
+                >
+                  {TASK_STATUSES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
+                <select 
+                  name="classification"
+                  defaultValue={classification}
+                  className="w-full text-sm font-bold border border-slate-200 rounded-xl px-4 py-3 bg-white outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="regular">Regular</option>
+                  <option value="sprintly">Sprintly</option>
+                </select>
               </div>
             </div>
 

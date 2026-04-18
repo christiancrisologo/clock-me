@@ -31,6 +31,14 @@ export interface Task {
   updatedAt: number;
   targetDate?: string;
   link?: string;
+  issueKey?: string;
+  issueId?: string;
+  assignee?: string;
+  assigneeId?: string;
+  resolution?: string;
+  resolved?: string;
+  codebase?: string;
+  storyPoints?: number;
 }
 
 export interface Sprint {

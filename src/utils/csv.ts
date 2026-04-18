@@ -1,34 +1,69 @@
-import { Task } from '../types';
+import config from '../config.json';
 
 export const parseTasksFromCSV = (content: string): Partial<Task>[] => {
   const lines = content.split('\n').filter(line => line.trim() !== '');
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
   const tasks: Partial<Task>[] = [];
+  const fieldMatches = config.fieldMatches as Record<string, string[]>;
+
+  // Pre-calculate which internal key each column index maps to
+  const headerMap: Record<number, string> = {};
+  headers.forEach((header, index) => {
+    for (const [internalKey, aliases] of Object.entries(fieldMatches)) {
+      if (aliases.includes(header)) {
+        headerMap[index] = internalKey;
+        break;
+      }
+    }
+  });
 
   for (let i = 1; i < lines.length; i++) {
     const currentLine = parseCSVLine(lines[i]);
     if (currentLine.length === 0) continue;
 
     const task: any = {};
-    headers.forEach((header, index) => {
-      const val = currentLine[index];
-      if (!val) return;
+    
+    currentLine.forEach((val, index) => {
+      const internalKey = headerMap[index];
+      if (!internalKey) return;
 
-      switch (header) {
-        case 'Title': task.title = val.replace(/^"|"$/g, '').replace(/""/g, '"'); break;
-        case 'JIRA ID': task.jiraId = val; break;
-        case 'Reference Link': task.link = val; break;
-        case 'Status': task.status = val; break;
-        case 'Type': task.type = val; break;
-        case 'Classification': task.classification = val; break;
-        case 'Sprint Name': task.sprintName = val; break;
-        case 'Estimated Points': task.estimatedPoints = Number(val); break;
-        case 'Total Seconds': task.totalSeconds = Number(val); break;
-        case 'Created At': task.createdAt = new Date(val).getTime(); break;
-        // We omit ID to generate new ones, or keep it if we want to update.
-        // For 'generating tasks' as requested, we'll generate new IDs in useTasks.
+      const cleanVal = val.trim().replace(/^"|"$/g, '');
+      if (cleanVal === '') return;
+
+      // Handle specific types based on the internal key
+      switch (internalKey) {
+        case 'title':
+        case 'summary':
+          task.title = cleanVal.replace(/""/g, '"');
+          break;
+        case 'jiraId':
+          task.jiraId = cleanVal;
+          task.issueKey = cleanVal; // Keep both for compatibility
+          break;
+        case 'createdAt':
+        case 'updatedAt':
+        case 'resolved':
+          task[internalKey] = new Date(cleanVal).getTime();
+          break;
+        case 'estimatedPoints':
+        case 'estimatedHours':
+        case 'totalSeconds':
+        case 'storyPoints':
+          task[internalKey] = Number(cleanVal);
+          if (internalKey === 'storyPoints') {
+            task.estimatedPoints = Number(cleanVal);
+          }
+          break;
+        case 'sprint':
+          task.sprintName = cleanVal;
+          break;
+        case 'classification':
+          task.classification = cleanVal.toLowerCase() as 'regular' | 'sprintly';
+          break;
+        default:
+          task[internalKey] = cleanVal;
       }
     });
 

@@ -15,5 +15,82 @@
     "Testing",
     "Done"
   ],
-  "autoSync": true
+  "autoSync": true,
+  "fieldMatches": {
+    "title": [
+      "title"
+    ],
+    "id": [
+      "id"
+    ],
+    "sprint": [
+      "sprint",
+      "sprintName"
+    ],
+    "summary": [
+      "summary"
+    ],
+    "jiraId": [
+      "jira id",
+      "issue key"
+    ],
+    "link": [
+      "reference link"
+    ],
+    "status": [
+      "status",
+      "taskStatus"
+    ],
+    "type": [
+      "type",
+      "issue type",
+      "task type"
+    ],
+    "assignee": [
+      "assignee",
+      "created by"
+    ],
+    "resolution": [
+      "resolution"
+    ],
+    "resolved": [
+      "resolved"
+    ],
+    "codebase": [
+      "custom field (codebase)",
+      "codebase"
+    ],
+    "storyPoints": [
+      "custom field (story points)",
+      "points",
+      "story points"
+    ],
+    "classification": [
+      "classification"
+    ],
+    "estimatedPoints": [
+      "estimated points",
+      "points",
+      "target points"
+    ],
+    "estimatedHours": [
+      "estimated hours",
+      "estimatedHours",
+      "target hours"
+    ],
+    "totalSeconds": [
+      "total seconds",
+      "totalSeconds",
+      "time spent",
+      "timeSpent"
+    ],
+    "createdAt": [
+      "created at",
+      "created"
+    ],
+    "updatedAt": [
+      "updated at",
+      "updated"
+    ]
+  }
 }

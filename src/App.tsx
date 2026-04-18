@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { isSupabaseConfigured } from './lib/supabase';
+import { cn } from './lib/utils';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { TasksView } from './components/features/tasks/TasksView';
@@ -17,6 +18,7 @@ import { Task } from './types';
 
 import { calculateSprintMetrics } from './utils/metrics';
 import { parseTasksFromCSV } from './utils/csv';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function App() {
   // UI State
@@ -30,6 +32,7 @@ export default function App() {
   const [addingTaskType, setAddingTaskType] = useState<'regular' | 'sprintly'>('regular');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [productivityPeriod, setProductivityPeriod] = useState<'day' | 'week' | 'month'>('week');
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   // Domain State
   const { sprints, setSprints, currentSprint } = useSprints();
@@ -44,7 +47,6 @@ export default function App() {
     syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
   }>({});
   
-  // This hook now manages the 'tasks' state internally
   const taskHook = useTasks(syncHandlersRef.current, autoSync);
   const { 
     tasks, 
@@ -57,6 +59,27 @@ export default function App() {
     updateTaskStatus, 
     deleteTask 
   } = taskHook;
+
+  const activeSprints = React.useMemo(() => {
+    const sprintNamesFromTasks = Array.from(new Set(tasks.map(t => t.sprintName).filter(Boolean))) as string[];
+    
+    // 1. Get managed sprints that actually have tasks
+    const matchedSprints = sprints.filter(s => sprintNamesFromTasks.includes(s.name));
+    
+    // 2. Identify sprint names from tasks that aren't in our managed list
+    const missingSprintNames = sprintNamesFromTasks.filter(name => !sprints.some(s => s.name === name));
+    const missingSprints = missingSprintNames.map(name => ({
+      id: name,
+      name: name,
+      isCurrent: false,
+      startDate: '',
+      endDate: '',
+      capacityHours: 0,
+      updatedAt: Date.now()
+    }));
+    
+    return [...matchedSprints, ...missingSprints].sort((a, b) => b.name.localeCompare(a.name));
+  }, [sprints, tasks]);
 
   const sync = useSync(tasks, setTasks, sprints, setSprints);
   const {
@@ -93,7 +116,8 @@ export default function App() {
       targetDate: formData.get('targetDate') as string || undefined,
       createdAt: formData.get('createdAt') ? new Date(formData.get('createdAt') as string).getTime() : undefined,
       link: formData.get('link') as string || undefined,
-      classification: addingTaskType
+      status: formData.get('status') as string || 'To do',
+      classification: formData.get('classification') as 'regular' | 'sprintly'
     };
 
     if (editingTask) {
@@ -110,17 +134,43 @@ export default function App() {
 
   const handleImportCSV = (file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const content = e.target?.result as string;
       if (content) {
         const importedTasks = parseTasksFromCSV(content);
+        
         if (importedTasks.length > 0) {
           // Map sprint names to sprint IDs if they exist
           const mappedTasks = importedTasks.map(t => ({
             ...t,
             sprintId: sprints.find(s => s.name === t.sprintName)?.id || ''
           }));
-          addTasks(mappedTasks);
+          
+          const result = await addTasks(mappedTasks);
+          
+          if (result && result.addedCount > 0) {
+            setNotification({ 
+              message: `Successfully imported ${result.addedCount} tasks! ${result.duplicateCount > 0 ? `(${result.duplicateCount} duplicates skipped)` : ''}`, 
+              type: 'success' 
+            });
+          } else if (result && result.duplicateCount > 0) {
+            setNotification({ 
+              message: `All ${result.duplicateCount} tasks in the CSV were already in your list.`, 
+              type: 'error' 
+            });
+          } else {
+            setNotification({ 
+              message: "No valid tasks could be processed from this file.", 
+              type: 'error' 
+            });
+          }
+          setTimeout(() => setNotification(null), 5000);
+        } else {
+          setNotification({ 
+            message: "Failed to parse CSV. Please ensure it follows the correct format.", 
+            type: 'error' 
+          });
+          setTimeout(() => setNotification(null), 5000);
         }
       }
     };
@@ -129,7 +179,7 @@ export default function App() {
 
   const exportToCSV = () => {
     const headers = [
-      'ID', 'Title', 'JIRA ID', 'Reference Link', 'Status', 'Type', 'Classification', 'Sprint Name',
+      'ID', 'Title', 'JIRA ID', 'Status', 'Type', 'Classification', 'Sprint Name',
       'Estimated Points', 'Estimated Hours', 'Total Seconds', 'Total Hours',
       'Created At', 'Updated At'
     ];
@@ -138,7 +188,6 @@ export default function App() {
       t.id,
       `"${t.title.replace(/"/g, '""')}"`,
       t.jiraId || '',
-      t.link || '',
       t.status,
       t.type,
       t.classification,
@@ -169,9 +218,6 @@ export default function App() {
         isOpen={isSidebarOpen}
         currentView={view}
         setView={setView}
-        currentSprint={currentSprint}
-        completedTasksCount={completedTasks.filter(t => t.sprintId === currentSprint?.id).length}
-        totalTasksInSprint={sprintTasks.length}
       />
 
       <main className="flex-1 overflow-y-auto bg-slate-50/50 h-screen">
@@ -194,7 +240,7 @@ export default function App() {
           {view === VIEWS.TASKS && (
             <TasksView 
               tasks={tasks}
-              sprints={sprints}
+              sprints={activeSprints}
               activeTaskIds={activeTaskIds}
               isStatsMinimized={isStatsMinimized}
               setIsStatsMinimized={setIsStatsMinimized}
@@ -251,8 +297,23 @@ export default function App() {
           }}
           onSubmit={handleTaskSubmit}
           addingTaskType={addingTaskType}
-          sprints={sprints}
+          sprints={activeSprints}
         />
+      )}
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className={cn(
+            "flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md",
+            notification.type === 'success' 
+              ? "bg-green-500/90 border-green-400 text-white" 
+              : "bg-amber-500/90 border-amber-400 text-white"
+          )}>
+            {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+            <p className="text-sm font-bold tracking-tight">{notification.message}</p>
+          </div>
+        </div>
       )}
     </div>
   );
