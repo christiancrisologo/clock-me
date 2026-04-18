@@ -92,5 +92,7 @@
       "updated at",
       "updated"
     ]
-  }
+  },
+  "totalTaskPerPage": 10,
+  "pagination": true
 }

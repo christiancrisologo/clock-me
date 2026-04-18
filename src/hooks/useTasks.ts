@@ -75,7 +75,7 @@ export const useTasks = (
     syncHandlers?.pushTaskToSupabase?.(newTask);
   };
 
-  const addTasks = async (taskDatas: Partial<Task>[]) => {
+  const addTasks = async (taskDatas: Partial<Task>[], onProgress?: (current: number) => void) => {
     // 1. Filter out duplicates from the incoming data and existing state
     const duplicateCount = { val: 0 };
     const filteredTaskDatas = taskDatas.filter(newData => {
@@ -124,8 +124,10 @@ export const useTasks = (
     setTasks(prev => [...newTasks, ...prev]);
     
     // Push each new task to Supabase
-    for (const task of newTasks) {
+    for (let i = 0; i < newTasks.length; i++) {
+      const task = newTasks[i];
       await syncHandlers?.pushTaskToSupabase?.(task);
+      onProgress?.(i + 1);
     }
 
     return { addedCount: newTasks.length, duplicateCount: duplicateCount.val };
@@ -236,6 +238,12 @@ export const useTasks = (
     syncHandlers?.deleteTaskFromSupabase?.(taskId);
   };
 
+  const deleteTasks = (taskIds: string[]) => {
+    setActiveTaskIds(prev => prev.filter(id => !taskIds.includes(id)));
+    setTasks(prev => prev.filter(t => !taskIds.includes(t.id)));
+    taskIds.forEach(id => syncHandlers?.deleteTaskFromSupabase?.(id));
+  };
+
   return {
     tasks,
     setTasks,
@@ -245,6 +253,7 @@ export const useTasks = (
     updateTask,
     toggleTimer,
     updateTaskStatus,
-    deleteTask
+    deleteTask,
+    deleteTasks
   };
 };

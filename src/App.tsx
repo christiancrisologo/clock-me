@@ -13,19 +13,19 @@ import { useTasks } from './hooks/useTasks';
 import { useSync } from './hooks/useSync';
 import { useTimer } from './hooks/useTimer';
 import { useUIState } from './hooks/useUIState';
-import { VIEWS, LS_NAME_TASK } from './constants';
+import { VIEWS } from './constants';
 import { Task } from './types';
 
 import { calculateSprintMetrics } from './utils/metrics';
 import { parseTasksFromCSV } from './utils/csv';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader, FileUp } from 'lucide-react';
 
 export default function App() {
   // UI State
-  const { 
-    view, setView, 
-    isSidebarOpen, setIsSidebarOpen, 
-    isStatsMinimized, setIsStatsMinimized 
+  const {
+    view, setView,
+    isSidebarOpen, setIsSidebarOpen,
+    isStatsMinimized, setIsStatsMinimized
   } = useUIState();
 
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -33,10 +33,12 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [productivityPeriod, setProductivityPeriod] = useState<'day' | 'week' | 'month'>('week');
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number, total: number } | null>(null);
 
   // Domain State
   const { sprints, setSprints, currentSprint } = useSprints();
-  
+
   // 1. Initialize Sync state first to get setAutoSync and autoSync
   const [autoSync, setAutoSync] = useState(true);
 
@@ -46,26 +48,27 @@ export default function App() {
     deleteTaskFromSupabase?: (taskId: string) => Promise<void>;
     syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
   }>({});
-  
+
   const taskHook = useTasks(syncHandlersRef.current, autoSync);
-  const { 
-    tasks, 
-    setTasks, 
-    activeTaskIds, 
-    addTask, 
-    addTasks, 
-    updateTask, 
-    toggleTimer, 
-    updateTaskStatus, 
-    deleteTask 
+  const {
+    tasks,
+    setTasks,
+    activeTaskIds,
+    addTask,
+    addTasks,
+    updateTask,
+    toggleTimer,
+    updateTaskStatus,
+    deleteTask,
+    deleteTasks
   } = taskHook;
 
   const activeSprints = React.useMemo(() => {
     const sprintNamesFromTasks = Array.from(new Set(tasks.map(t => t.sprintName).filter(Boolean))) as string[];
-    
+
     // 1. Get managed sprints that actually have tasks
     const matchedSprints = sprints.filter(s => sprintNamesFromTasks.includes(s.name));
-    
+
     // 2. Identify sprint names from tasks that aren't in our managed list
     const missingSprintNames = sprintNamesFromTasks.filter(name => !sprints.some(s => s.name === name));
     const missingSprints = missingSprintNames.map(name => ({
@@ -77,7 +80,7 @@ export default function App() {
       capacityHours: 0,
       updatedAt: Date.now()
     }));
-    
+
     return [...matchedSprints, ...missingSprints].sort((a, b) => b.name.localeCompare(a.name));
   }, [sprints, tasks]);
 
@@ -102,7 +105,7 @@ export default function App() {
 
   // Custom Timer Hook
   useTimer(activeTaskIds, setTasks);
-  
+
   const handleTaskSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -133,42 +136,49 @@ export default function App() {
   };
 
   const handleImportCSV = (file: File) => {
+    setImportFile(file);
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       const content = e.target?.result as string;
       if (content) {
         const importedTasks = parseTasksFromCSV(content);
-        
+
         if (importedTasks.length > 0) {
-          // Map sprint names to sprint IDs if they exist
+          const total = importedTasks.length;
+          setImportProgress({ current: 0, total });
+
+          // Map and default to sprintly
           const mappedTasks = importedTasks.map(t => ({
             ...t,
-            sprintId: sprints.find(s => s.name === t.sprintName)?.id || ''
+            classification: 'sprintly' as const,
+            sprintId: activeSprints.find(s => s.name === t.sprintName)?.id || ''
           }));
-          
-          const result = await addTasks(mappedTasks);
-          
+
+          const result = await addTasks(mappedTasks, (current) => {
+            setImportProgress({ current, total });
+          });
+
+          setImportProgress(null);
+          setImportFile(null);
+
           if (result && result.addedCount > 0) {
-            setNotification({ 
-              message: `Successfully imported ${result.addedCount} tasks! ${result.duplicateCount > 0 ? `(${result.duplicateCount} duplicates skipped)` : ''}`, 
-              type: 'success' 
+            setNotification({
+              message: `Successfully imported ${result.addedCount} tasks! ${result.duplicateCount > 0 ? `(${result.duplicateCount} duplicates skipped)` : ''}`,
+              type: 'success'
             });
           } else if (result && result.duplicateCount > 0) {
-            setNotification({ 
-              message: `All ${result.duplicateCount} tasks in the CSV were already in your list.`, 
-              type: 'error' 
-            });
-          } else {
-            setNotification({ 
-              message: "No valid tasks could be processed from this file.", 
-              type: 'error' 
+            setNotification({
+              message: `All ${result.duplicateCount} tasks in the CSV were already in your list.`,
+              type: 'error'
             });
           }
           setTimeout(() => setNotification(null), 5000);
         } else {
-          setNotification({ 
-            message: "Failed to parse CSV. Please ensure it follows the correct format.", 
-            type: 'error' 
+          setImportFile(null);
+          setNotification({
+            message: "Failed to parse CSV. Please ensure it follows the correct format.",
+            type: 'error'
           });
           setTimeout(() => setNotification(null), 5000);
         }
@@ -214,14 +224,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      <Sidebar 
+      <Sidebar
         isOpen={isSidebarOpen}
         currentView={view}
         setView={setView}
       />
 
       <main className="flex-1 overflow-y-auto bg-slate-50/50 h-screen">
-        <Header 
+        <Header
           view={view}
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -238,7 +248,7 @@ export default function App() {
 
         <div className="p-8 max-w-6xl mx-auto">
           {view === VIEWS.TASKS && (
-            <TasksView 
+            <TasksView
               tasks={tasks}
               sprints={activeSprints}
               activeTaskIds={activeTaskIds}
@@ -251,6 +261,7 @@ export default function App() {
                 setEditingTask(t);
                 setIsAddingTask(true);
               }}
+              onDeleteTasks={deleteTasks}
               onAddNewTask={() => {
                 setAddingTaskType('regular');
                 setIsAddingTask(true);
@@ -259,7 +270,7 @@ export default function App() {
           )}
 
           {view === VIEWS.DASHBOARD && (
-            <AnalyticsDashboard 
+            <AnalyticsDashboard
               sprintTasks={sprintTasks}
               currentSprint={currentSprint}
               efficiency={calculateSprintMetrics(tasks, currentSprint?.id).efficiency}
@@ -273,7 +284,7 @@ export default function App() {
           )}
 
           {view === VIEWS.SETTINGS && (
-            <SettingsView 
+            <SettingsView
               isSupabaseOnline={isSupabaseOnline}
               isSupabaseConfigured={isSupabaseConfigured}
               isSyncing={isSyncing}
@@ -289,7 +300,7 @@ export default function App() {
       </main>
 
       {isAddingTask && (
-        <TaskForm 
+        <TaskForm
           task={editingTask}
           onClose={() => {
             setIsAddingTask(false);
@@ -301,13 +312,60 @@ export default function App() {
         />
       )}
 
+      {/* CSV Import Modal */}
+      {importFile && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+              <div className="p-2 bg-brand-100 text-brand-600 rounded-lg">
+                <FileUp size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Import CSV</h3>
+                <p className="text-xs text-slate-500 font-medium">{importFile.name}</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="py-4 space-y-6">
+                <div className="flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="relative">
+                    <Loader className="text-brand-600 animate-spin" size={48} strokeWidth={3} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-black text-brand-700">
+                        {importProgress ? Math.round((importProgress.current / importProgress.total) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-black text-slate-900 tracking-tight">
+                      {importProgress ? 'Processing Tasks...' : 'Initializing...'}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {importProgress ? `${importProgress.current} of ${importProgress.total} completed` : 'Reading file...'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-brand-500 h-full transition-all duration-300 shadow-[0_0_10px_rgba(14,165,233,0.5)]"
+                    style={{ width: `${importProgress ? (importProgress.current / importProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notification Toast */}
       {notification && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className={cn(
             "flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md",
-            notification.type === 'success' 
-              ? "bg-green-500/90 border-green-400 text-white" 
+            notification.type === 'success'
+              ? "bg-green-500/90 border-green-400 text-white"
               : "bg-amber-500/90 border-amber-400 text-white"
           )}>
             {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}

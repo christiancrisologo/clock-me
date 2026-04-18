@@ -28,6 +28,8 @@ interface TaskCardProps {
   onUpdateStatus: (id: string, status: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -38,7 +40,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onToggleTimer,
   onUpdateStatus,
   onEdit,
-  onDelete
+  onDelete,
+  isSelected,
+  onToggleSelect
 }) => {
   const isDone = task.status.toLowerCase() === 'done';
   const devSec = task.classification === 'sprintly' ? (task.phaseSeconds['In progress'] || 0) : task.totalSeconds;
@@ -59,12 +63,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {/* Compact Header */}
       <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button 
-            onClick={() => onToggleExpand(task.id)}
-            className="text-slate-400 hover:text-brand-600 transition-colors"
-          >
-            {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-          </button>
+          <div className="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              checked={isSelected}
+              onChange={onToggleSelect}
+              disabled={isActive}
+              className={cn(
+                "w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 transition-all",
+                isActive ? "opacity-20 cursor-not-allowed" : "cursor-pointer hover:border-brand-400"
+              )}
+            />
+            <button 
+              onClick={() => onToggleExpand(task.id)}
+              className="text-slate-400 hover:text-brand-600 transition-colors"
+            >
+              {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+            </button>
+          </div>
           <div className="min-w-0 flex-1">
             <h3 className="text-base font-bold text-slate-900 truncate group-hover:text-brand-700 transition-colors">
               {task.title}
@@ -125,7 +141,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <Pencil size={16} />
             </Button>
 
-            <Button variant="danger" size="icon-sm" onClick={() => onDelete(task.id)} title="Delete Task">
+            <Button 
+              variant="danger" 
+              size="icon-sm" 
+              onClick={() => onDelete(task.id)} 
+              title="Delete Task"
+              disabled={isActive}
+              className={isActive ? "opacity-30 cursor-not-allowed" : ""}
+            >
               <Trash2 size={16} />
             </Button>
           </div>
