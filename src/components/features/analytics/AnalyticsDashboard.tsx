@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarChart3, Zap, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { cn } from '../../../lib/utils';
 import { 
   BarChart, 
   Bar, 
