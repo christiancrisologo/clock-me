@@ -82,10 +82,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </button>
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-bold text-slate-900 truncate group-hover:text-brand-700 transition-colors">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate group-hover:text-brand-700 transition-colors">
               {task.title}
             </h3>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1 sm:mt-1.5">
               <Badge variant={isDone ? 'success' : task.status.toLowerCase().includes('progress') ? 'info' : 'default'}>
                 {task.status}
               </Badge>
@@ -93,7 +93,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 {task.classification}
               </Badge>
               {task.jiraId && !isExpanded && (
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[80px]">
+                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[70px]">
                   {task.jiraId}
                 </span>
               )}
@@ -101,24 +101,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
           <div className="text-right">
             <p className={cn(
-              "text-2xl font-mono font-black tracking-tighter leading-none",
+              "text-lg sm:text-2xl font-mono font-black tracking-tighter leading-none",
               isActive ? "text-brand-600" : "text-slate-900"
             )}>
               {formatTimeDisplay(task.totalSeconds)}
             </p>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Time Spent</p>
+            <p className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Spent</p>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <select 
               value={task.status}
               disabled={isActive}
               onChange={(e) => onUpdateStatus(task.id, e.target.value)}
               className={cn(
-                "text-[10px] font-bold border border-slate-200 rounded-md px-2 py-1 bg-white outline-none focus:border-brand-500 hidden sm:block transition-opacity",
+                "text-[9px] sm:text-[10px] font-bold border border-slate-200 rounded-md px-1.5 sm:px-2 py-1 bg-white outline-none focus:border-brand-500 hidden sm:block transition-opacity h-8 sm:h-auto",
                 isActive && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -130,15 +130,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {!isDone && (
               <Button 
                 variant={isActive ? 'amber' : 'primary'}
-                size="icon"
+                size="icon-sm"
                 onClick={() => onToggleTimer(task.id)}
+                className="h-9 w-9 sm:h-10 sm:w-10"
               >
-                {isActive ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+                {isActive ? <Pause size={16} fill="currentColor" className="sm:w-5 sm:h-5" /> : <Play size={16} fill="currentColor" className="ml-0.5 sm:w-5 sm:h-5" />}
               </Button>
             )}
             
-            <Button variant="outline" size="icon-sm" onClick={() => onEdit(task)} title="Edit Task">
-              <Pencil size={16} />
+            <Button variant="outline" size="icon-sm" onClick={() => onEdit(task)} title="Edit Task" className="h-9 w-9 sm:h-10 sm:w-10">
+              <Pencil size={14} className="sm:w-4 sm:h-4" />
             </Button>
 
             <Button 
@@ -147,9 +148,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               onClick={() => onDelete(task.id)} 
               title="Delete Task"
               disabled={isActive}
-              className={isActive ? "opacity-30 cursor-not-allowed" : ""}
+              className={cn(isActive ? "opacity-30 cursor-not-allowed" : "", "h-9 w-9 sm:h-10 sm:w-10")}
             >
-              <Trash2 size={16} />
+              <Trash2 size={14} className="sm:w-4 sm:h-4" />
             </Button>
           </div>
         </div>
@@ -157,23 +158,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       
       {/* Collapsible Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-2 border-t border-slate-50 bg-slate-50/30 animate-in slide-in-from-top-2 duration-200">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-3">
+        <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 border-t border-slate-50 bg-slate-50/30 animate-in slide-in-from-top-2 duration-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {task.jiraId && (
                   <div className="bg-white px-2 py-1 rounded border border-slate-200">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">JIRA ID</p>
+                    <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">JIRA ID</p>
                     <p className="text-xs font-bold text-slate-700">{task.jiraId}</p>
                   </div>
                 )}
                 <div className="bg-white px-2 py-1 rounded border border-slate-200">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Type</p>
+                  <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">Type</p>
                   <p className="text-xs font-bold text-brand-600">{task.type}</p>
                 </div>
                 {task.sprintName && (
                   <div className="bg-white px-2 py-1 rounded border border-slate-200">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sprint</p>
+                    <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sprint</p>
                     <p className="text-xs font-bold text-slate-700">{task.sprintName}</p>
                   </div>
                 )}
@@ -182,37 +183,37 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     href={task.link.startsWith('http') ? task.link : `https://${task.link}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="bg-white px-2 py-1 rounded border border-slate-200 hover:border-brand-500 hover:bg-brand-50 transition-all flex items-center gap-1.5 group/link"
+                    className="bg-white px-2 py-1 rounded border border-slate-200 hover:border-brand-500 hover:bg-brand-50 transition-all flex items-center gap-1 group/link"
                   >
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest group-hover/link:text-brand-600">Link</p>
-                    <ExternalLink size={12} className="text-slate-400 group-hover/link:text-brand-600" />
+                    <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest group-hover/link:text-brand-600">Link</p>
+                    <ExternalLink size={10} className="text-slate-400 group-hover/link:text-brand-600" />
                   </a>
                 )}
               </div>
               
-              <div className="flex flex-wrap gap-4 text-[11px] text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <Target size={14} className="text-slate-400" />
+              <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-slate-500">
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <Target size={12} className="text-slate-400" />
                   <span className="font-medium">{task.estimatedPoints} pts ({task.estimatedHours}h)</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock size={14} className="text-slate-400" />
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <Clock size={12} className="text-slate-400" />
                   <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
                 </div>
                 {task.targetDate && (
-                  <div className="flex items-center gap-1.5 text-amber-600 font-bold">
-                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                  <div className="flex items-center gap-1 sm:gap-1.5 text-amber-600 font-bold">
+                    <div className="w-1 h-1 rounded-full bg-current" />
                     <span>Target: {new Date(task.targetDate).toLocaleDateString()}</span>
                   </div>
                 )}
               </div>
 
               {task.classification === 'sprintly' && task.logs && task.logs.length > 0 && (
-                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Activity Logs</p>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <div className="bg-white p-2 sm:p-3 rounded-xl border border-slate-200 space-y-2 sm:space-y-3">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Activity Logs</p>
+                  <div className="space-y-1 max-h-36 sm:max-h-48 overflow-y-auto pr-1">
                     {task.logs.slice().reverse().map((log, i) => (
-                      <div key={i} className="flex items-center justify-between text-[10px] py-1 border-b border-slate-50 last:border-0">
+                      <div key={i} className="flex items-center justify-between text-[8px] sm:text-[10px] py-0.5 sm:py-1 border-b border-slate-50 last:border-0">
                         <span className="text-slate-500 font-medium">{format(log.timestamp, 'MMM dd, HH:mm:ss')}</span>
                         <Badge variant={log.type === 'resume' ? 'success' : log.type === 'pause' ? 'warning' : 'info'}>
                           {log.type === 'transition' ? `${log.fromStatus} → ${log.toStatus}` : log.type}
@@ -224,16 +225,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               )}
             </div>
 
-            <div className="flex flex-col justify-end gap-3">
+            <div className="flex flex-col justify-end gap-2 sm:gap-3">
               {isDone && (
-                <div className="bg-brand-50 p-4 rounded-xl border border-brand-100 space-y-3 animate-in fade-in zoom-in duration-300">
+                <div className="bg-brand-50 p-3 sm:p-4 rounded-xl border border-brand-100 space-y-2 sm:space-y-3 animate-in fade-in zoom-in duration-300">
                   <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp size={16} className="text-brand-600" />
-                    <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Completion Analytics</p>
+                    <TrendingUp size={14} className="sm:w-4 sm:h-4 text-brand-600" />
+                    <p className="text-[9px] sm:text-[10px] font-black text-brand-600 uppercase tracking-widest">Completion Analytics</p>
                     <InfoDialog 
                       title="Completion Analytics" 
                       content={
-                        <ul className="list-disc pl-4 space-y-2">
+                        <ul className="list-disc pl-4 space-y-1 sm:space-y-2 text-[9px] sm:text-xs">
                           <li><strong>Total Efficiency:</strong> (Estimated Hours / Total Time Spent) × 100</li>
                           <li><strong>Dev Efficiency:</strong> (Estimated Hours / Active Dev Time) × 100</li>
                           <li><strong>Waiting Impact:</strong> Productivity lost due to external phases.</li>
@@ -243,10 +244,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <div className="bg-white p-2 rounded-lg border border-brand-100">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase">Total Time</p>
-                      <p className="text-sm font-black text-slate-900">{formatTimeDisplay(task.totalSeconds)}</p>
+                      <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase">Total Time</p>
+                      <p className="text-xs sm:text-sm font-black text-slate-900">{formatTimeDisplay(task.totalSeconds)}</p>
                     </div>
                     <div className="bg-white p-2 rounded-lg border border-brand-100">
                       <p className="text-[9px] font-bold text-slate-400 uppercase">Efficiency</p>

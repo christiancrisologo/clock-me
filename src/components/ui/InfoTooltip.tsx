@@ -20,8 +20,8 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({ title, content }) => {
         <Info size={14} />
       </button>
       {isOpen && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-900 text-white text-[10px] rounded-lg shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
-          <p className="font-bold border-b border-slate-700 pb-1 mb-1 uppercase tracking-wider">{title}</p>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 sm:w-64 p-2.5 sm:p-3 bg-slate-900 text-white text-[9px] sm:text-[10px] rounded-lg shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
+          <p className="font-bold border-b border-slate-700 pb-1 mb-1 uppercase tracking-wider text-[8px] sm:text-[9px]">{title}</p>
           <div className="space-y-1 text-slate-300 leading-relaxed">
             {content}
           </div>

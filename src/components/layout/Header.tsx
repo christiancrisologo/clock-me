@@ -60,8 +60,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-      <div className="flex items-center gap-4">
+    <header className="bg-white border-b border-slate-200 px-3 sm:px-4 md:px-8 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between sticky top-0 z-10 gap-3">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Button
           variant="ghost"
           size="sm"
@@ -72,12 +72,12 @@ export const Header: React.FC<HeaderProps> = ({
           {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
         </Button>
         <div>
-          <h2 className="text-lg font-bold text-slate-900">{getTitle()}</h2>
-          <p className="text-sm text-slate-500">{getSubtitle()}</p>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">{getTitle()}</h2>
+          <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">{getSubtitle()}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4">
         {onSave && (
           <Button
             variant="ghost"

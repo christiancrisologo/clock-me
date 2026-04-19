@@ -40,91 +40,91 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto p-3 sm:p-4">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-brand-600 text-white rounded-2xl shadow-lg shadow-brand-100">
-              <Database size={32} />
+        <div className="p-4 sm:p-6 md:p-8 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-brand-600 text-white rounded-2xl shadow-lg shadow-brand-100 flex-shrink-0">
+              <Database size={24} className="sm:w-8 sm:h-8" />
             </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-900">Storage & Sync</h3>
-              <p className="text-slate-500">Manage your data synchronization with Supabase</p>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-2xl font-black text-slate-900">Storage & Sync</h3>
+              <p className="text-xs sm:text-sm text-slate-500">Manage your data synchronization with Supabase</p>
             </div>
           </div>
         </div>
 
-        <div className="p-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 md:space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+            <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <div className={cn(
-                    "p-2 rounded-lg",
+                    "p-2 rounded-lg flex-shrink-0",
                     isSupabaseOnline ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
                   )}>
-                    {isSupabaseOnline ? <Cloud size={20} /> : <CloudOff size={20} />}
+                    {isSupabaseOnline ? <Cloud size={18} /> : <CloudOff size={18} />}
                   </div>
-                  <p className="font-bold text-slate-900">Supabase Connection</p>
+                  <p className="font-bold text-slate-900 text-sm truncate">Supabase Connection</p>
                 </div>
                 <span className={cn(
-                  "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                  "px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest flex-shrink-0",
                   isSupabaseOnline ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                 )}>
-                  {isSupabaseOnline ? 'Connected' : 'Offline Mode'}
+                  {isSupabaseOnline ? 'Connected' : 'Offline'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed">
                 {isSupabaseOnline
                   ? 'Successfully connected to Supabase. Cloud sync is active.'
                   : 'Could not connect to Supabase. Changes are being saved locally.'}
               </p>
             </div>
 
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-brand-100 text-brand-600 rounded-lg">
-                    <RefreshCw size={20} className={cn(isSyncing && "animate-spin")} />
+            <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="p-2 bg-brand-100 text-brand-600 rounded-lg flex-shrink-0">
+                    <RefreshCw size={18} className={cn(isSyncing && "animate-spin")} />
                   </div>
-                  <p className="font-bold text-slate-900">Auto-Sync</p>
+                  <p className="font-bold text-slate-900 text-sm">Auto-Sync</p>
                 </div>
                 <button
                   onClick={() => isSupabaseOnline && setAutoSync(!autoSync)}
                   disabled={!isSupabaseOnline}
                   className={cn(
-                    "w-12 h-6 rounded-full transition-all relative",
+                    "w-11 h-6 rounded-full transition-all relative flex-shrink-0",
                     autoSync && isSupabaseOnline ? "bg-brand-600" : "bg-slate-300",
                     !isSupabaseOnline && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <div className={cn(
                     "absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm",
-                    autoSync && isSupabaseOnline ? "left-7" : "left-1"
+                    autoSync && isSupabaseOnline ? "left-6" : "left-0.5"
                   )} />
                 </button>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed">
                 Automatically compare and merge data from Supabase whenever you resume a task timer.
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Manual Synchronization</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <h4 className="text-[9px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Manual Synchronization</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Button
                 variant="outline"
                 onClick={() => onSync()}
                 disabled={!isSupabaseOnline || isSyncing}
-                className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                className="flex items-center gap-2 sm:gap-4 p-3 sm:p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white text-xs sm:text-sm"
               >
-                <div className="p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105">
-                  <RefreshCw size={24} className={cn("text-slate-400 group-hover:text-brand-600", isSyncing && "animate-spin")} />
+                <div className="p-2 sm:p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105 flex-shrink-0">
+                  <RefreshCw size={18} className={cn("text-slate-400 group-hover:text-brand-600 sm:w-6 sm:h-6", isSyncing && "animate-spin")} />
                 </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-900">Sync Now</p>
-                  <p className="text-[10px] text-slate-500 font-medium">Merge local & remote data</p>
+                <div className="text-left min-w-0">
+                  <p className="font-bold text-slate-900 text-xs sm:text-sm">Sync Now</p>
+                  <p className="text-[8px] sm:text-[10px] text-slate-500 font-medium">Merge local & remote</p>
                 </div>
               </Button>
 
@@ -132,19 +132,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 variant="outline"
                 onClick={() => onSync(true)}
                 disabled={!isSupabaseOnline || isSyncing}
-                className="flex items-center gap-4 p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                className="flex items-center gap-2 sm:gap-4 p-3 sm:p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white text-xs sm:text-sm"
               >
-                <div className="p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105">
-                  <Save size={24} className="text-slate-400 group-hover:text-brand-600" />
+                <div className="p-2 sm:p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105 flex-shrink-0">
+                  <Save size={18} className="text-slate-400 group-hover:text-brand-600 sm:w-6 sm:h-6" />
                 </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-900">Force Backup</p>
-                  <p className="text-[10px] text-slate-500 font-medium">Push local data to cloud</p>
+                <div className="text-left min-w-0">
+                  <p className="font-bold text-slate-900 text-xs sm:text-sm">Force Backup</p>
+                  <p className="text-[8px] sm:text-[10px] text-slate-500 font-medium">Push local to cloud</p>
                 </div>
               </Button>
             </div>
             {lastSyncTime && (
-              <p className="text-[10px] text-center text-slate-400 italic">
+              <p className="text-[8px] sm:text-[10px] text-center text-slate-400 italic">
                 Last successful sync: {new Date(lastSyncTime).toLocaleString()}
               </p>
             )}

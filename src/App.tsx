@@ -223,14 +223,15 @@ export default function App() {
   const sprintTasks = tasks.filter(t => t.sprintId === currentSprint?.id);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50/50">
       <Sidebar
         isOpen={isSidebarOpen}
         currentView={view}
         setView={setView}
+        onNavigate={() => setIsSidebarOpen(false)}
       />
 
-      <main className="flex-1 overflow-y-auto bg-slate-50/50 h-screen">
+      <main className="flex-1 overflow-y-auto h-screen md:ml-0">
         <Header
           view={view}
           isSidebarOpen={isSidebarOpen}
@@ -246,7 +247,7 @@ export default function App() {
           setProductivityPeriod={setProductivityPeriod}
         />
 
-        <div className="p-8 max-w-6xl mx-auto">
+        <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full md:max-w-6xl mx-auto">
           {view === VIEWS.TASKS && (
             <TasksView
               tasks={tasks}

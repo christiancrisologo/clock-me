@@ -22,42 +22,42 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 gap-2">
         <div className="flex items-center gap-2">
-          <BarChart3 size={18} className="text-brand-600" />
-          <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">Performance Metrics</h4>
+          <BarChart3 size={16} className="sm:w-5 sm:h-5 text-brand-600" />
+          <h4 className="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-widest">Performance Metrics</h4>
         </div>
         <button 
           onClick={() => setIsMinimized(!isMinimized)}
-          className="text-[10px] font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50"
+          className="text-[9px] sm:text-[10px] font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 w-fit"
         >
-          {isMinimized ? 'Show Metrics' : 'Hide Metrics'}
+          {isMinimized ? 'Show' : 'Hide'}
           <ChevronDown size={14} className={cn("transition-transform duration-300", !isMinimized && "rotate-180")} />
         </button>
       </div>
 
       {!isMinimized && (
-        <div className="p-8 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div className="p-4 sm:p-6 md:p-8 transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             <Metric 
-              icon={<Clock size={28} />} 
+              icon={<Clock size={24} className="sm:w-7 sm:h-7" />} 
               label="Total Time" 
               value={formatDuration(totalTimeSpent)} 
               variant="blue" 
             />
             <Metric 
-              icon={<CheckCircle2 size={28} />} 
+              icon={<CheckCircle2 size={24} className="sm:w-7 sm:h-7" />} 
               label="Completed" 
               value={`${completedTasksCount} / ${totalTasksCount}`} 
               variant="green" 
             />
-            <div className="flex items-center gap-5">
-              <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl">
-                <TrendingUp size={28} />
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="p-3 sm:p-4 bg-purple-50 text-purple-600 rounded-2xl flex-shrink-0">
+                <TrendingUp size={24} className="sm:w-7 sm:h-7" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Dev Efficiency</p>
+                  <p className="text-[9px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Dev Efficiency</p>
                   <InfoDialog 
                     title="Dev Efficiency" 
                     content={
@@ -72,7 +72,7 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
                     }
                   />
                 </div>
-                <p className="text-2xl font-black text-slate-900 tracking-tight">{(efficiency * 100).toFixed(0)}%</p>
+                <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{(efficiency * 100).toFixed(0)}%</p>
               </div>
             </div>
           </div>
@@ -97,13 +97,13 @@ const Metric: React.FC<MetricProps> = ({ icon, label, value, variant }) => {
   };
 
   return (
-    <div className="flex items-center gap-5">
-      <div className={cn("p-4 rounded-2xl", variants[variant])}>
+    <div className="flex items-center gap-3 sm:gap-5">
+      <div className={cn("p-3 sm:p-4 rounded-2xl flex-shrink-0", variants[variant])}>
         {icon}
       </div>
       <div>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-2xl font-black text-slate-900 tracking-tight">{value}</p>
+        <p className="text-[9px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-base sm:text-2xl font-black text-slate-900 tracking-tight">{value}</p>
       </div>
     </div>
   );

@@ -50,56 +50,56 @@ export const ProductivityView: React.FC<ProductivityViewProps> = ({ tasks, perio
     .slice(0, 5);
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <TrendingUp size={20} className="text-brand-600" />
+    <div className="space-y-4 sm:space-y-6 md:space-y-8">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 className="font-bold text-slate-900 mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base">
+          <TrendingUp size={18} className="sm:w-5 sm:h-5 text-brand-600" />
           Productivity Trend ({period})
           <InfoTooltip 
             title="Productivity Trend" 
             content={
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                 <p>Visualizes your development hours, waiting hours, and total points delivered over the selected period.</p>
               </div>
             }
           />
         </h3>
-        <div className="h-96">
+        <div className="h-64 sm:h-80 md:h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                 cursor={{ fill: '#f8fafc' }}
               />
-              <Bar dataKey="devHours" name="Dev Hours" stackId="a" fill="#0ea5e9" radius={[0, 0, 0, 0]} barSize={40} />
-              <Bar dataKey="waitHours" name="Wait Hours" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={40} />
-              <Bar dataKey="points" name="Points Delivered" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+              <Bar dataKey="devHours" name="Dev Hours" stackId="a" fill="#0ea5e9" radius={[0, 0, 0, 0]} barSize={24} />
+              <Bar dataKey="waitHours" name="Wait Hours" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={24} />
+              <Bar dataKey="points" name="Points Delivered" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h4 className="font-bold text-slate-900 mb-4">Top Performing Tasks</h4>
-          <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h4 className="font-bold text-slate-900 mb-3 sm:mb-4 text-sm sm:text-base">Top Performing Tasks</h4>
+          <div className="space-y-2 sm:space-y-4">
             {topPerformingTasks.map((task, i) => {
               const efficiency = (task.estimatedHours / (task.totalSeconds / 3600)) * 100;
               return (
-                <div key={task.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-brand-100 text-brand-600 text-[10px] font-black flex items-center justify-center">#{i + 1}</span>
-                    <div>
-                      <p className="text-xs font-bold text-slate-700 truncate max-w-[180px]">{task.title}</p>
-                      <p className="text-[10px] text-slate-400 font-medium">{task.jiraId || 'No JIRA ID'}</p>
+                <div key={task.id} className="flex items-center justify-between p-2 sm:p-3 rounded-xl bg-slate-50 border border-slate-100 gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-100 text-brand-600 text-[8px] sm:text-[10px] font-black flex-shrink-0 flex items-center justify-center">#{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-700 truncate">{task.title}</p>
+                      <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium">{task.jiraId || 'No JIRA'}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-black text-brand-600">{efficiency.toFixed(0)}%</p>
-                    <p className="text-[9px] text-slate-400 uppercase font-black uppercase tracking-widest">Efficiency</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[10px] sm:text-xs font-black text-brand-600">{efficiency.toFixed(0)}%</p>
+                    <p className="text-[7px] sm:text-[8px] text-slate-400 uppercase font-black tracking-widest">Eff</p>
                   </div>
                 </div>
               );
@@ -107,16 +107,16 @@ export const ProductivityView: React.FC<ProductivityViewProps> = ({ tasks, perio
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h4 className="font-bold text-slate-900 mb-4">Productivity Highlights</h4>
-          <div className="space-y-4">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h4 className="font-bold text-slate-900 mb-3 sm:mb-4 text-sm sm:text-base">Productivity Highlights</h4>
+          <div className="space-y-2 sm:space-y-4">
             <HighlightItem 
-              icon={<Clock size={18} />} 
+              icon={<Clock size={16} className="sm:w-5 sm:h-5" />} 
               label="Weekly Average Time" 
               value={`${(tasks.reduce((acc, t) => acc + t.totalSeconds, 0) / (tasks.length || 1) / 3600).toFixed(1)}h`} 
             />
             <HighlightItem 
-              icon={<Zap size={18} />} 
+              icon={<Zap size={16} className="sm:w-5 sm:h-5" />} 
               label="Best Efficiency" 
               value={topPerformingTasks.length > 0 ? `${((topPerformingTasks[0].estimatedHours / (topPerformingTasks[0].totalSeconds / 3600)) * 100).toFixed(0)}%` : 'N/A'} 
             />
@@ -128,11 +128,11 @@ export const ProductivityView: React.FC<ProductivityViewProps> = ({ tasks, perio
 };
 
 const HighlightItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) => (
-  <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100">
-    <div className="flex items-center gap-3 text-slate-500">
+  <div className="flex items-center justify-between p-2 sm:p-4 rounded-xl border border-slate-100 gap-2">
+    <div className="flex items-center gap-2 sm:gap-3 text-slate-500 min-w-0 flex-1">
       {icon}
-      <span className="text-xs font-medium">{label}</span>
+      <span className="text-[10px] sm:text-xs font-medium truncate">{label}</span>
     </div>
-    <span className="text-sm font-black text-slate-900">{value}</span>
+    <span className="text-xs sm:text-sm font-black text-slate-900 flex-shrink-0">{value}</span>
   </div>
 );
