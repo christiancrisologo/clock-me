@@ -1,74 +1,123 @@
-# Clock-Me 🕒
+# Clock-Me
 
 <div align="center">
-  <p><em>The ultimate productivity and time-tracking companion for modern software developers.</em></p>
+  <p><em>A developer-focused productivity tracker for tasks, sprints, and execution analytics.</em></p>
 </div>
 
 ---
 
-## 🚀 Overview
+## Overview
 
-**Clock-Me** is a high-performance web application designed specifically for developers to measure task efficiency, track internal development phases, and visualize sprint velocity. Built with a focus on rich aesthetics and micro-interactions, it transforms mundane time tracking into a data-driven experience.
+Clock-Me helps software teams and individual developers track execution time, compare estimates versus actual effort, and understand sprint throughput with actionable analytics.
 
-## ✨ Key Features
+It supports local-first usage and optional Supabase sync for multi-device resilience.
 
-- **🎯 Dual Task Modes**:
-  - **Regular Tasks**: Fast, one-click tracking for standalone items.
-  - **Sprintly Tasks**: Sophisticated tracking across multiple phases (Development, Code Review, Testing) to measure waiting impact.
-- **📊 Advanced Analytics Dashboard**:
-  - **Real-time Velocity**: Track delivered points and total active time.
-  - **Efficiency Ratios**: Compare actual vs. estimated hours with live feedback.
-  - **Time Distribution Chart**: Visualize exactly where your time is going (Dev vs. Wait time).
-  - **Manual Sync**: Instant "Sync Now" button to reconcile data across devices.
-- **📈 Productivity Trends**: Analyze performance over days, weeks, or months with historical trend visualizations.
-- **☁️ Cloud Sync & Data Resilience**:
-  - **Supabase Integration**: Seamless background synchronization.
-  - **Manual Save/Sync**: Dedicated toolbar button for forced backups.
-  - **Conflict Resolution**: Smart merging using `updatedAt` timestamps.
-- **📂 Data Portability**:
-  - **Export to CSV**: Download your entire history for external reporting.
-  - **Import from CSV**: Bulk-generate tasks from external files with built-in duplicate filtering (based on JIRA ID or Title).
+## What Is New
 
-## 🛠️ How to Use
+- Supabase schema now uses `cm_` prefixes for table names:
+  - `cm_tasks`
+  - `cm_sprints`
+  - `cm_analytics_snapshots`
+- Column names remain clean and readable (`id`, `updated_at`, `snapshot_id`, etc.).
+- Sync now persists derived analytics snapshots in addition to tasks and sprints.
+- Manual synchronization options were expanded:
+  - **Sync Now** merges local and remote data by latest `updatedAt`.
+  - **Force Backup** pushes local as source of truth and removes remote-only rows.
+- Header quick-save action triggers a forced cloud backup for one-click protection.
+- Productivity analytics include period-based snapshots (`day`, `week`, `month`) and top-performing task highlights.
 
-### 1. Managing Tasks
-- **Creation**: Click `+ New Task` in the header. Use **Regular** for quick items or **Sprintly** for features requiring review/testing phases.
-- **Tracking**: Use the `Play/Pause` buttons. Sprintly tasks automatically log time into the "In Progress" phase by default.
-- **Bulk Operation**: Use the **Import from CSV** feature in Settings to upload multiple tasks at once. The app will automatically assign new UUIDs and skip duplicates.
+## Core Features
 
-### 2. Measuring Efficiency
-- **Performance Metrics**: View total time and dev efficiency at the top of the Tasks view.
-- **Analytics Deep Dive**: Use the **Sprint Analytics** tab for visual distributions of "Wait Time" vs. "Dev Time".
+- Dual task classification:
+  - **regular** for straightforward items.
+  - **sprintly** for phase-based work (In progress, Code Review, Testing).
+- Sprint analytics dashboard:
+  - Sprint completion metrics.
+  - Efficiency calculations.
+  - Development vs waiting-time visualization.
+- Productivity trends:
+  - Daily, weekly, and monthly groupings.
+  - Historical chart data generated from task history.
+- Cloud sync with conflict handling:
+  - Merge strategy based on the latest `updatedAt`.
+  - Safe offline fallback when Supabase is unavailable.
+- Data portability:
+  - CSV export of tracked tasks.
+  - CSV import with duplicate filtering.
 
-### 3. Synchronization
-- **Auto-Sync**: Background sync happens whenever you resume a timer or modify a task.
-- **Manual Control**: Use **Sync Now** (merge) or **Force Backup** (overwrite remote) in the Settings view.
-- **Quick Save**: Use the diskette icon in the header toolbar for an instant cloud push.
+## Sync Behavior
 
-## 💻 Tech Stack
+- Auto-sync can be toggled in Settings.
+- Connection checks are performed periodically when configured.
+- `Sync Now`:
+  - Pulls remote records.
+  - Merges by latest `updatedAt`.
+  - Pushes merged result back to Supabase.
+- `Force Backup`:
+  - Treats local state as canonical.
+  - Deletes remote-only task and sprint records.
+  - Upserts local tasks, sprints, and analytics snapshots.
 
-- **Framework**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Charts**: [Recharts](https://recharts.org/)
-- **Backend**: [Supabase](https://supabase.com/)
-- **Styling**: Vanilla CSS (Custom design system)
-- **State Management**: Custom unified state hooks with `localStorage` persistence.
+## Tech Stack
 
-## 🏗️ Getting Started
+- React 19 + Vite
+- TypeScript
+- Supabase JavaScript client
+- Recharts for visualizations
+- date-fns for temporal grouping and formatting
+- Lucide React for icons
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Environment Setup**:
-   Copy `.env.example` to `.env.local` and add your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-3. **Run Locally**:
-   ```bash
-   npm run dev
-   ```
+## Getting Started
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure environment variables:
+
+- Copy `.env.example` to `.env.local`.
+- Set:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
+
+3. Apply database migration:
+
+- Migration file:
+  - `supabase/migrations/20260419000100_create_clock_me_schema.sql`
+
+- With Supabase CLI:
+
+```bash
+supabase link --project-ref <your-project-ref>
+supabase db push
+```
+
+4. Start development server:
+
+```bash
+npm run dev
+```
+
+5. Optional type-check:
+
+```bash
+npm run lint
+```
+
+## Database Tables
+
+The migration creates these public tables:
+
+- `cm_tasks`
+- `cm_sprints`
+- `cm_analytics_snapshots`
+
+Each table is created with row-level security enabled and permissive anon/authenticated policies intended for app-level prototyping workflows.
 
 ---
 
 <div align="center">
-  Built with ❤️ by <strong>Christian Crisologo</strong> for the developer community.
+  Built by <strong>Christian Crisologo</strong>.
 </div>

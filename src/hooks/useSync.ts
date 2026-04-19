@@ -1,18 +1,83 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import {
+  fromSupabaseSprintRow,
+  fromSupabaseTaskRow,
+  isSupabaseConfigured,
+  supabase,
+  SupabaseSprintRow,
+  SupabaseTaskRow,
+  toSupabaseAnalyticsSnapshotRow,
+  toSupabaseSprintRow,
+  toSupabaseTaskRow
+} from '../lib/supabase';
 import { Task, Sprint } from '../types';
-import { AUTO_SYNC_DEFAULT } from '../constants';
+import { buildAnalyticsSnapshots } from '../utils/metrics';
 
 export const useSync = (
-  tasks: Task[], 
+  tasks: Task[],
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>,
   sprints: Sprint[],
-  setSprints: React.Dispatch<React.SetStateAction<Sprint[]>>
+  setSprints: React.Dispatch<React.SetStateAction<Sprint[]>>,
+  autoSync: boolean
 ) => {
   const [isSupabaseOnline, setIsSupabaseOnline] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [autoSync, setAutoSync] = useState(AUTO_SYNC_DEFAULT);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+
+  const mergeByUpdatedAt = <T extends { id: string; updatedAt: number }>(
+    localItems: T[],
+    remoteItems: T[]
+  ) => {
+    const mergedItems = [...localItems];
+
+    remoteItems.forEach((remoteItem) => {
+      const localIndex = mergedItems.findIndex((localItem) => localItem.id === remoteItem.id);
+
+      if (localIndex === -1) {
+        mergedItems.push(remoteItem);
+        return;
+      }
+
+      if (remoteItem.updatedAt > mergedItems[localIndex].updatedAt) {
+        mergedItems[localIndex] = remoteItem;
+      }
+    });
+
+    return mergedItems;
+  };
+
+  const persistAnalyticsSnapshots = async (nextTasks: Task[], nextSprints: Sprint[]) => {
+    if (!supabase) return;
+
+    const snapshotRows = buildAnalyticsSnapshots(nextTasks, nextSprints).map(toSupabaseAnalyticsSnapshotRow);
+
+    if (snapshotRows.length === 0) return;
+
+    const { error } = await supabase
+      .from('cm_analytics_snapshots')
+      .upsert(snapshotRows, { onConflict: 'snapshot_id' });
+
+    if (error) {
+      throw error;
+    }
+  };
+
+  const upsertRows = async (nextTasks: Task[], nextSprints: Sprint[]) => {
+    if (!supabase) return;
+
+    const taskRows = nextTasks.map(toSupabaseTaskRow);
+    const sprintRows = nextSprints.map(toSupabaseSprintRow);
+
+    if (sprintRows.length > 0) {
+      const { error } = await supabase.from('cm_sprints').upsert(sprintRows, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    if (taskRows.length > 0) {
+      const { error } = await supabase.from('cm_tasks').upsert(taskRows, { onConflict: 'id' });
+      if (error) throw error;
+    }
+  };
 
   useEffect(() => {
     const checkSupabaseConnection = async () => {
@@ -25,7 +90,7 @@ export const useSync = (
           setIsSupabaseOnline(false);
           return;
         }
-        const { error } = await supabase.from('tasks').select('id').limit(1);
+        const { error } = await supabase.from('cm_tasks').select('id').limit(1);
         setIsSupabaseOnline(!error);
       } catch (e) {
         setIsSupabaseOnline(false);
@@ -52,47 +117,66 @@ export const useSync = (
       setIsSupabaseOnline(false);
       return;
     }
+
     setIsSyncing(true);
+
     try {
-      const { data: remoteTasks, error: tasksError } = await supabase.from('tasks').select('*');
-      const { data: remoteSprints, error: sprintsError } = await supabase.from('sprints').select('*');
+      const [
+        { data: remoteTaskRows, error: tasksError },
+        { data: remoteSprintRows, error: sprintsError }
+      ] = await Promise.all([
+        supabase.from('cm_tasks').select('*'),
+        supabase.from('cm_sprints').select('*')
+      ]);
 
       if (tasksError || sprintsError) {
         console.warn('Sync failed - status check:', tasksError || sprintsError);
         setIsSupabaseOnline(false);
-        setIsSyncing(false);
         return;
       }
 
       setIsSupabaseOnline(true);
 
-      if (forcePush) {
-        for (const task of tasks) await supabase.from('tasks').upsert(task);
-        for (const sprint of sprints) await supabase.from('sprints').upsert(sprint);
-      } else {
-        const mergedTasks = [...tasks];
-        remoteTasks?.forEach((rt: Task) => {
-          const localIndex = mergedTasks.findIndex(lt => lt.id === rt.id);
-          if (localIndex === -1) mergedTasks.push(rt);
-          else if (rt.updatedAt > mergedTasks[localIndex].updatedAt) mergedTasks[localIndex] = rt;
-        });
+      const remoteTasks = (remoteTaskRows || []).map((row) => fromSupabaseTaskRow(row as SupabaseTaskRow));
+      const remoteSprints = (remoteSprintRows || []).map((row) => fromSupabaseSprintRow(row as SupabaseSprintRow));
 
-        const mergedSprints = [...sprints];
-        remoteSprints?.forEach((rs: Sprint) => {
-          const localIndex = mergedSprints.findIndex(ls => ls.id === rs.id);
-          if (localIndex === -1) mergedSprints.push(rs);
-          else if (rs.updatedAt > mergedSprints[localIndex].updatedAt) mergedSprints[localIndex] = rs;
-        });
+      if (forcePush) {
+        const localTaskIds = new Set(tasks.map((task) => task.id));
+        const localSprintIds = new Set(sprints.map((sprint) => sprint.id));
+        const remoteOnlyTaskIds = remoteTasks
+          .map((task) => task.id)
+          .filter((taskId) => !localTaskIds.has(taskId));
+        const remoteOnlySprintIds = remoteSprints
+          .map((sprint) => sprint.id)
+          .filter((sprintId) => !localSprintIds.has(sprintId));
+
+        if (remoteOnlyTaskIds.length > 0) {
+          const { error } = await supabase.from('cm_tasks').delete().in('id', remoteOnlyTaskIds);
+          if (error) throw error;
+        }
+
+        if (remoteOnlySprintIds.length > 0) {
+          const { error } = await supabase.from('cm_sprints').delete().in('id', remoteOnlySprintIds);
+          if (error) throw error;
+        }
+
+        await upsertRows(tasks, sprints);
+        await persistAnalyticsSnapshots(tasks, sprints);
+      } else {
+        const mergedTasks = mergeByUpdatedAt(tasks, remoteTasks);
+        const mergedSprints = mergeByUpdatedAt(sprints, remoteSprints);
 
         setTasks(mergedTasks);
         setSprints(mergedSprints);
 
-        for (const task of mergedTasks) await supabase.from('tasks').upsert(task);
-        for (const sprint of mergedSprints) await supabase.from('sprints').upsert(sprint);
+        await upsertRows(mergedTasks, mergedSprints);
+        await persistAnalyticsSnapshots(mergedTasks, mergedSprints);
       }
+
       setLastSyncTime(Date.now());
     } catch (error) {
       console.error('Sync error:', error);
+      setIsSupabaseOnline(false);
     } finally {
       setIsSyncing(false);
     }
@@ -101,8 +185,16 @@ export const useSync = (
   const pushTaskToSupabase = async (task: Task) => {
     if (isSupabaseConfigured && navigator.onLine && autoSync && supabase) {
       try {
-        const { error } = await supabase.from('tasks').upsert(task);
-        if (error) setIsSupabaseOnline(false);
+        const { error } = await supabase
+          .from('cm_tasks')
+          .upsert(toSupabaseTaskRow(task), { onConflict: 'id' });
+
+        if (error) {
+          setIsSupabaseOnline(false);
+          return;
+        }
+
+        setIsSupabaseOnline(true);
       } catch (error) {
         setIsSupabaseOnline(false);
       }
@@ -112,8 +204,14 @@ export const useSync = (
   const deleteTaskFromSupabase = async (taskId: string) => {
     if (isSupabaseConfigured && navigator.onLine && autoSync && supabase) {
       try {
-        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-        if (error) setIsSupabaseOnline(false);
+        const { error } = await supabase.from('cm_tasks').delete().eq('id', taskId);
+
+        if (error) {
+          setIsSupabaseOnline(false);
+          return;
+        }
+
+        setIsSupabaseOnline(true);
       } catch (error) {
         setIsSupabaseOnline(false);
       }
@@ -121,14 +219,14 @@ export const useSync = (
   };
 
   useEffect(() => {
-    if (autoSync) syncWithSupabase();
+    if (autoSync) {
+      void syncWithSupabase();
+    }
   }, []);
 
   return {
     isSupabaseOnline,
     isSyncing,
-    autoSync,
-    setAutoSync,
     lastSyncTime,
     syncWithSupabase,
     pushTaskToSupabase,

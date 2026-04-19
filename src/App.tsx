@@ -13,7 +13,7 @@ import { useTasks } from './hooks/useTasks';
 import { useSync } from './hooks/useSync';
 import { useTimer } from './hooks/useTimer';
 import { useUIState } from './hooks/useUIState';
-import { VIEWS } from './constants';
+import { AUTO_SYNC_DEFAULT, VIEWS } from './constants';
 import { Task } from './types';
 
 import { calculateSprintMetrics } from './utils/metrics';
@@ -40,7 +40,7 @@ export default function App() {
   const { sprints, setSprints, currentSprint } = useSprints();
 
   // 1. Initialize Sync state first to get setAutoSync and autoSync
-  const [autoSync, setAutoSync] = useState(true);
+  const [autoSync, setAutoSync] = useState(AUTO_SYNC_DEFAULT);
 
   // 2. We use a ref for sync handlers to avoid circular dependency
   const syncHandlersRef = React.useRef<{
@@ -84,7 +84,7 @@ export default function App() {
     return [...matchedSprints, ...missingSprints].sort((a, b) => b.name.localeCompare(a.name));
   }, [sprints, tasks]);
 
-  const sync = useSync(tasks, setTasks, sprints, setSprints);
+  const sync = useSync(tasks, setTasks, sprints, setSprints, autoSync);
   const {
     isSupabaseOnline,
     isSyncing,
@@ -242,7 +242,7 @@ export default function App() {
             setAddingTaskType(type);
             setIsAddingTask(true);
           }}
-          onSave={() => syncWithSupabase()}
+          onSave={() => syncWithSupabase(true)}
           productivityPeriod={productivityPeriod}
           setProductivityPeriod={setProductivityPeriod}
         />
