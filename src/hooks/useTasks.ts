@@ -8,16 +8,21 @@ export const useTasks = (
     deleteTaskFromSupabase?: (taskId: string) => Promise<void>;
     syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
   } | null | undefined,
-  autoSync: boolean
+  autoSync: boolean,
+  userId: string
 ) => {
+  const taskStorageKey = `${LS_NAME_TASK}:${userId}`;
+  const activeTaskStorageKey = `clock-me-active-task-ids:${userId}`;
+
   const [tasks, setTasks] = useState<Task[]>(() => {
     // Migration: Check for both new and old keys
-    const savedNew = localStorage.getItem(LS_NAME_TASK);
+    const savedNew = localStorage.getItem(taskStorageKey);
     if (savedNew) {
       const parsed = JSON.parse(savedNew);
       return parsed.map((t: any) => ({
         ...t,
-        updatedAt: t.updatedAt || t.createdAt || Date.now()
+        updatedAt: t.updatedAt || t.createdAt || Date.now(),
+        userId: t.userId || userId
       }));
     }
 
@@ -35,17 +40,17 @@ export const useTasks = (
   });
 
   const [activeTaskIds, setActiveTaskIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('clock-me-active-task-ids');
+    const saved = localStorage.getItem(activeTaskStorageKey);
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem(LS_NAME_TASK, JSON.stringify(tasks));
-  }, [tasks]);
+    localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
+  }, [taskStorageKey, tasks]);
 
   useEffect(() => {
-    localStorage.setItem('clock-me-active-task-ids', JSON.stringify(activeTaskIds));
-  }, [activeTaskIds]);
+    localStorage.setItem(activeTaskStorageKey, JSON.stringify(activeTaskIds));
+  }, [activeTaskIds, activeTaskStorageKey]);
 
   const addTask = (taskData: Partial<Task>) => {
     const pts = taskData.estimatedPoints || 0;
@@ -68,7 +73,8 @@ export const useTasks = (
       sprintName: taskData.sprintName || '',
       createdAt: taskData.createdAt || Date.now(),
       updatedAt: Date.now(),
-      targetDate: taskData.targetDate
+      targetDate: taskData.targetDate,
+      userId
     };
 
     setTasks(prev => [newTask, ...prev]);
@@ -117,7 +123,8 @@ export const useTasks = (
         createdAt: taskData.createdAt || Date.now(),
         updatedAt: Date.now(),
         targetDate: taskData.targetDate,
-        link: taskData.link
+        link: taskData.link,
+        userId
       };
     });
 

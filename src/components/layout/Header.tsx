@@ -8,7 +8,9 @@ import {
   ChevronDown,
   Circle,
   Zap,
-  Save
+  Save,
+  LogOut,
+  User
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { AppView, VIEWS } from '../../constants';
@@ -24,6 +26,9 @@ interface HeaderProps {
   onSave?: () => void;
   productivityPeriod?: 'day' | 'week' | 'month';
   setProductivityPeriod?: (period: 'day' | 'week' | 'month') => void;
+  userName?: string;
+  isGuest?: boolean;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,9 +40,13 @@ export const Header: React.FC<HeaderProps> = ({
   onAddTask,
   onSave,
   productivityPeriod,
-  setProductivityPeriod
+  setProductivityPeriod,
+  userName,
+  isGuest,
+  onLogout
 }) => {
   const [isNewTaskMenuOpen, setIsNewTaskMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const getTitle = () => {
     switch (view) {
@@ -153,6 +162,47 @@ export const Header: React.FC<HeaderProps> = ({
                 {p}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* User Menu */}
+        {userName && (
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="gap-2 text-slate-700"
+            >
+              <User size={18} />
+              <span className="text-sm truncate max-w-[120px]">{userName}</span>
+              {isGuest && <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded ml-1">Guest</span>}
+            </Button>
+
+            {isUserMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setIsUserMenuOpen(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Account</p>
+                    <p className="text-sm font-medium text-slate-900 truncate">{userName}</p>
+                    {isGuest && <p className="text-xs text-amber-600 font-medium mt-1">Guest Mode</p>}
+                  </div>
+                  {onLogout && (
+                    <button
+                      onClick={() => {
+                        onLogout();
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <LogOut size={14} />
+                      Sign Out
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

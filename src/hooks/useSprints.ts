@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react';
 import { Sprint } from '../types';
 import { LS_NAME_SPRINT, INITIAL_SPRINT } from '../constants';
 
-export const useSprints = () => {
+export const useSprints = (userId: string) => {
+  const sprintStorageKey = `${LS_NAME_SPRINT}:${userId}`;
+
   const [sprints, setSprints] = useState<Sprint[]>(() => {
-    const savedNew = localStorage.getItem(LS_NAME_SPRINT);
+    const savedNew = localStorage.getItem(sprintStorageKey);
     if (savedNew) {
       const parsed = JSON.parse(savedNew);
       return parsed.map((s: any) => ({
         ...s,
-        updatedAt: s.updatedAt || Date.now()
+        updatedAt: s.updatedAt || Date.now(),
+        userId: s.userId || userId
       }));
     }
 
@@ -23,12 +26,12 @@ export const useSprints = () => {
       }));
     }
 
-    return [INITIAL_SPRINT];
+    return [{ ...INITIAL_SPRINT, userId }];
   });
 
   useEffect(() => {
-    localStorage.setItem(LS_NAME_SPRINT, JSON.stringify(sprints));
-  }, [sprints]);
+    localStorage.setItem(sprintStorageKey, JSON.stringify(sprints));
+  }, [sprintStorageKey, sprints]);
 
   const currentSprint = sprints.find(s => s.isCurrent);
 

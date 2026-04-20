@@ -39,6 +39,7 @@ export interface Task {
   resolved?: string;
   codebase?: string;
   storyPoints?: number;
+  userId?: string; // User relationship
 }
 
 export interface Sprint {
@@ -49,10 +50,26 @@ export interface Sprint {
   capacityHours: number;
   isCurrent: boolean;
   updatedAt: number;
+  userId?: string; // User relationship
 }
 
 export interface AppState {
   tasks: Task[];
   sprints: Sprint[];
   activeTaskIds: string[];
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  isGuest: boolean;
+  createdAt: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  isAuthenticated: boolean;
+  isGuest: boolean;
+  token?: string;
+  expiresAt?: string;
 }

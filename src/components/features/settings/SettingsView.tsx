@@ -24,6 +24,8 @@ interface SettingsViewProps {
   onSync: (forcePush?: boolean) => void;
   onExport: () => void;
   onImport: (file: File) => void;
+  isGuest?: boolean;
+  userName?: string;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -35,7 +37,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   lastSyncTime,
   onSync,
   onExport,
-  onImport
+  onImport,
+  isGuest,
+  userName
 }) => {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -71,11 +75,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   "px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest flex-shrink-0",
                   isSupabaseOnline ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                 )}>
-                  {isSupabaseOnline ? 'Connected' : 'Offline'}
+                  {isGuest ? 'Guest' : isSupabaseOnline ? 'Connected' : 'Offline'}
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed">
-                {isSupabaseOnline
+                {isGuest
+                  ? 'You are using guest mode. Data stays on this device until you sign in.'
+                  : isSupabaseOnline
                   ? 'Successfully connected to Supabase. Cloud sync is active.'
                   : 'Could not connect to Supabase. Changes are being saved locally.'}
               </p>
@@ -90,12 +96,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <p className="font-bold text-slate-900 text-sm">Auto-Sync</p>
                 </div>
                 <button
-                  onClick={() => isSupabaseOnline && setAutoSync(!autoSync)}
-                  disabled={!isSupabaseOnline}
+                  onClick={() => isSupabaseOnline && !isGuest && setAutoSync(!autoSync)}
+                  disabled={!isSupabaseOnline || isGuest}
                   className={cn(
                     "w-11 h-6 rounded-full transition-all relative flex-shrink-0",
                     autoSync && isSupabaseOnline ? "bg-brand-600" : "bg-slate-300",
-                    !isSupabaseOnline && "opacity-50 cursor-not-allowed"
+                    (!isSupabaseOnline || isGuest) && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <div className={cn(
@@ -105,10 +111,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </button>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed">
-                Automatically compare and merge data from Supabase whenever you resume a task timer.
+                {isGuest ? 'Guest mode keeps all changes local until you sign in with Supabase.' : 'Automatically compare and merge data from Supabase whenever you resume a task timer.'}
               </p>
             </div>
           </div>
+
+          {userName && (
+            <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+              <p className="text-[9px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Current Session</p>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-200 text-slate-700 rounded-lg">
+                  <User size={18} />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">{userName}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500">{isGuest ? 'Guest session' : 'Authenticated with Supabase'}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3 sm:space-y-4">
             <h4 className="text-[9px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Manual Synchronization</h4>
@@ -116,7 +137,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <Button
                 variant="outline"
                 onClick={() => onSync()}
-                disabled={!isSupabaseOnline || isSyncing}
+                disabled={!isSupabaseOnline || isSyncing || isGuest}
                 className="flex items-center gap-2 sm:gap-4 p-3 sm:p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white text-xs sm:text-sm"
               >
                 <div className="p-2 sm:p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105 flex-shrink-0">
@@ -131,7 +152,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <Button
                 variant="outline"
                 onClick={() => onSync(true)}
-                disabled={!isSupabaseOnline || isSyncing}
+                disabled={!isSupabaseOnline || isSyncing || isGuest}
                 className="flex items-center gap-2 sm:gap-4 p-3 sm:p-5 h-auto rounded-2xl border border-slate-200 hover:border-brand-200 hover:bg-brand-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed bg-white text-xs sm:text-sm"
               >
                 <div className="p-2 sm:p-3 bg-white rounded-xl border border-slate-100 group-hover:border-brand-100 shadow-sm transition-all group-hover:scale-105 flex-shrink-0">

@@ -15,9 +15,12 @@ It supports local-first usage and optional Supabase sync for multi-device resili
 ## What Is New
 
 - Supabase schema now uses `cm_` prefixes for table names:
+  - `cm_users`
   - `cm_tasks`
   - `cm_sprints`
   - `cm_analytics_snapshots`
+- Authentication now supports username + password (no email input required in the app UI).
+- Guest login is available for offline/local-only usage when Supabase is unavailable.
 - Column names remain clean and readable (`id`, `updated_at`, `snapshot_id`, etc.).
 - Sync now persists derived analytics snapshots in addition to tasks and sprints.
 - Manual synchronization options were expanded:
@@ -31,6 +34,9 @@ It supports local-first usage and optional Supabase sync for multi-device resili
 - Dual task classification:
   - **regular** for straightforward items.
   - **sprintly** for phase-based work (In progress, Code Review, Testing).
+- Authentication modes:
+  - **Username account** for authenticated cloud sync.
+  - **Guest mode** for offline-first local usage.
 - Sprint analytics dashboard:
   - Sprint completion metrics.
   - Efficiency calculations.
@@ -49,6 +55,7 @@ It supports local-first usage and optional Supabase sync for multi-device resili
 
 - Auto-sync can be toggled in Settings.
 - Connection checks are performed periodically when configured.
+- Guest sessions keep data local and do not push to Supabase.
 - `Sync Now`:
   - Pulls remote records.
   - Merges by latest `updatedAt`.

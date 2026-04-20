@@ -46,6 +46,7 @@ export interface SupabaseTaskRow {
   resolved: string | null;
   codebase: string | null;
   story_points: number | null;
+  user_id: string | null;
 }
 
 export interface SupabaseSprintRow {
@@ -56,6 +57,7 @@ export interface SupabaseSprintRow {
   capacity_hours: number;
   is_current: boolean;
   updated_at: number;
+  user_id: string | null;
 }
 
 export interface SupabaseAnalyticsSnapshotRow {
@@ -67,6 +69,7 @@ export interface SupabaseAnalyticsSnapshotRow {
   completed_task_count: number;
   payload: JsonObject;
   updated_at: number;
+  user_id: string | null;
 }
 
 const asObject = (value: unknown): JsonObject => {
@@ -79,7 +82,7 @@ const asObject = (value: unknown): JsonObject => {
 
 const asArray = <T>(value: unknown): T[] => Array.isArray(value) ? (value as T[]) : [];
 
-export const toSupabaseTaskRow = (task: Task): SupabaseTaskRow => ({
+export const toSupabaseTaskRow = (task: Task, userId?: string | null): SupabaseTaskRow => ({
   id: task.id,
   title: task.title,
   jira_id: task.jiraId || null,
@@ -105,7 +108,8 @@ export const toSupabaseTaskRow = (task: Task): SupabaseTaskRow => ({
   resolution: task.resolution || null,
   resolved: task.resolved || null,
   codebase: task.codebase || null,
-  story_points: task.storyPoints ?? null
+  story_points: task.storyPoints ?? null,
+  user_id: userId || null
 });
 
 export const fromSupabaseTaskRow = (row: SupabaseTaskRow): Task => ({
@@ -134,17 +138,19 @@ export const fromSupabaseTaskRow = (row: SupabaseTaskRow): Task => ({
   resolution: row.resolution || undefined,
   resolved: row.resolved || undefined,
   codebase: row.codebase || undefined,
-  storyPoints: row.story_points ?? undefined
+  storyPoints: row.story_points ?? undefined,
+  userId: row.user_id || undefined
 });
 
-export const toSupabaseSprintRow = (sprint: Sprint): SupabaseSprintRow => ({
+export const toSupabaseSprintRow = (sprint: Sprint, userId?: string | null): SupabaseSprintRow => ({
   id: sprint.id,
   name: sprint.name,
   start_date: sprint.startDate,
   end_date: sprint.endDate,
   capacity_hours: sprint.capacityHours,
   is_current: sprint.isCurrent,
-  updated_at: sprint.updatedAt
+  updated_at: sprint.updatedAt,
+  user_id: userId || null
 });
 
 export const fromSupabaseSprintRow = (row: SupabaseSprintRow): Sprint => ({
@@ -154,11 +160,13 @@ export const fromSupabaseSprintRow = (row: SupabaseSprintRow): Sprint => ({
   endDate: row.end_date,
   capacityHours: Number(row.capacity_hours || 0),
   isCurrent: row.is_current,
-  updatedAt: Number(row.updated_at || Date.now())
+  updatedAt: Number(row.updated_at || Date.now()),
+  userId: row.user_id || undefined
 });
 
 export const toSupabaseAnalyticsSnapshotRow = (
-  snapshot: AnalyticsSnapshot
+  snapshot: AnalyticsSnapshot,
+  userId?: string | null
 ): SupabaseAnalyticsSnapshotRow => ({
   snapshot_id: snapshot.snapshotId,
   snapshot_type: snapshot.snapshotType,
@@ -167,5 +175,6 @@ export const toSupabaseAnalyticsSnapshotRow = (
   task_count: snapshot.taskCount,
   completed_task_count: snapshot.completedTaskCount,
   payload: snapshot.payload,
-  updated_at: snapshot.updatedAt
+  updated_at: snapshot.updatedAt,
+  user_id: userId || null
 });

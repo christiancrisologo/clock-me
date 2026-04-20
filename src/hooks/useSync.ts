@@ -18,7 +18,9 @@ export const useSync = (
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>,
   sprints: Sprint[],
   setSprints: React.Dispatch<React.SetStateAction<Sprint[]>>,
-  autoSync: boolean
+  autoSync: boolean,
+  userId: string,
+  isGuest: boolean
 ) => {
   const [isSupabaseOnline, setIsSupabaseOnline] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -47,9 +49,11 @@ export const useSync = (
   };
 
   const persistAnalyticsSnapshots = async (nextTasks: Task[], nextSprints: Sprint[]) => {
-    if (!supabase) return;
+    if (!supabase || isGuest) return;
 
-    const snapshotRows = buildAnalyticsSnapshots(nextTasks, nextSprints).map(toSupabaseAnalyticsSnapshotRow);
+    const snapshotRows = buildAnalyticsSnapshots(nextTasks, nextSprints).map((snapshot) =>
+      toSupabaseAnalyticsSnapshotRow(snapshot, userId)
+    );
 
     if (snapshotRows.length === 0) return;
 
@@ -63,10 +67,10 @@ export const useSync = (
   };
 
   const upsertRows = async (nextTasks: Task[], nextSprints: Sprint[]) => {
-    if (!supabase) return;
+    if (!supabase || isGuest) return;
 
-    const taskRows = nextTasks.map(toSupabaseTaskRow);
-    const sprintRows = nextSprints.map(toSupabaseSprintRow);
+    const taskRows = nextTasks.map((task) => toSupabaseTaskRow(task, userId));
+    const sprintRows = nextSprints.map((sprint) => toSupabaseSprintRow(sprint, userId));
 
     if (sprintRows.length > 0) {
       const { error } = await supabase.from('cm_sprints').upsert(sprintRows, { onConflict: 'id' });
@@ -85,12 +89,16 @@ export const useSync = (
         setIsSupabaseOnline(false);
         return;
       }
+      if (isGuest) {
+        setIsSupabaseOnline(false);
+        return;
+      }
       try {
         if (!supabase) {
           setIsSupabaseOnline(false);
           return;
         }
-        const { error } = await supabase.from('cm_tasks').select('id').limit(1);
+        const { error } = await supabase.from('cm_tasks').select('id').eq('user_id', userId).limit(1);
         setIsSupabaseOnline(!error);
       } catch (e) {
         setIsSupabaseOnline(false);
@@ -110,10 +118,10 @@ export const useSync = (
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [isGuest, userId]);
 
   const syncWithSupabase = async (forcePush = false) => {
-    if (!isSupabaseConfigured || !navigator.onLine || !supabase) {
+    if (!isSupabaseConfigured || !navigator.onLine || !supabase || isGuest) {
       setIsSupabaseOnline(false);
       return;
     }
@@ -125,8 +133,8 @@ export const useSync = (
         { data: remoteTaskRows, error: tasksError },
         { data: remoteSprintRows, error: sprintsError }
       ] = await Promise.all([
-        supabase.from('cm_tasks').select('*'),
-        supabase.from('cm_sprints').select('*')
+        supabase.from('cm_tasks').select('*').eq('user_id', userId),
+        supabase.from('cm_sprints').select('*').eq('user_id', userId)
       ]);
 
       if (tasksError || sprintsError) {
@@ -151,12 +159,12 @@ export const useSync = (
           .filter((sprintId) => !localSprintIds.has(sprintId));
 
         if (remoteOnlyTaskIds.length > 0) {
-          const { error } = await supabase.from('cm_tasks').delete().in('id', remoteOnlyTaskIds);
+          const { error } = await supabase.from('cm_tasks').delete().eq('user_id', userId).in('id', remoteOnlyTaskIds);
           if (error) throw error;
         }
 
         if (remoteOnlySprintIds.length > 0) {
-          const { error } = await supabase.from('cm_sprints').delete().in('id', remoteOnlySprintIds);
+          const { error } = await supabase.from('cm_sprints').delete().eq('user_id', userId).in('id', remoteOnlySprintIds);
           if (error) throw error;
         }
 
@@ -183,11 +191,11 @@ export const useSync = (
   };
 
   const pushTaskToSupabase = async (task: Task) => {
-    if (isSupabaseConfigured && navigator.onLine && autoSync && supabase) {
+    if (isSupabaseConfigured && navigator.onLine && autoSync && supabase && !isGuest) {
       try {
         const { error } = await supabase
           .from('cm_tasks')
-          .upsert(toSupabaseTaskRow(task), { onConflict: 'id' });
+          .upsert(toSupabaseTaskRow({ ...task, userId }, userId), { onConflict: 'id' });
 
         if (error) {
           setIsSupabaseOnline(false);
@@ -202,9 +210,9 @@ export const useSync = (
   };
 
   const deleteTaskFromSupabase = async (taskId: string) => {
-    if (isSupabaseConfigured && navigator.onLine && autoSync && supabase) {
+    if (isSupabaseConfigured && navigator.onLine && autoSync && supabase && !isGuest) {
       try {
-        const { error } = await supabase.from('cm_tasks').delete().eq('id', taskId);
+        const { error } = await supabase.from('cm_tasks').delete().eq('user_id', userId).eq('id', taskId);
 
         if (error) {
           setIsSupabaseOnline(false);
@@ -222,7 +230,7 @@ export const useSync = (
     if (autoSync) {
       void syncWithSupabase();
     }
-  }, []);
+  }, [autoSync]);
 
   return {
     isSupabaseOnline,

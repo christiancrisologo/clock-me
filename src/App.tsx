@@ -19,8 +19,17 @@ import { Task } from './types';
 import { calculateSprintMetrics } from './utils/metrics';
 import { parseTasksFromCSV } from './utils/csv';
 import { CheckCircle, AlertCircle, Loader, FileUp } from 'lucide-react';
+import { useAuth } from './hooks/useAuth';
 
-export default function App() {
+interface AppProps {
+  userId: string;
+  isGuest: boolean;
+  userName: string;
+}
+
+export default function App({ userId, isGuest, userName }: AppProps) {
+  const { signOut } = useAuth();
+
   // UI State
   const {
     view, setView,
@@ -37,7 +46,7 @@ export default function App() {
   const [importProgress, setImportProgress] = useState<{ current: number, total: number } | null>(null);
 
   // Domain State
-  const { sprints, setSprints, currentSprint } = useSprints();
+  const { sprints, setSprints, currentSprint } = useSprints(userId);
 
   // 1. Initialize Sync state first to get setAutoSync and autoSync
   const [autoSync, setAutoSync] = useState(AUTO_SYNC_DEFAULT);
@@ -49,7 +58,7 @@ export default function App() {
     syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
   }>({});
 
-  const taskHook = useTasks(syncHandlersRef.current, autoSync);
+  const taskHook = useTasks(syncHandlersRef.current, autoSync, userId);
   const {
     tasks,
     setTasks,
@@ -78,13 +87,14 @@ export default function App() {
       startDate: '',
       endDate: '',
       capacityHours: 0,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      userId
     }));
 
     return [...matchedSprints, ...missingSprints].sort((a, b) => b.name.localeCompare(a.name));
   }, [sprints, tasks]);
 
-  const sync = useSync(tasks, setTasks, sprints, setSprints, autoSync);
+  const sync = useSync(tasks, setTasks, sprints, setSprints, autoSync, userId, isGuest);
   const {
     isSupabaseOnline,
     isSyncing,
@@ -245,6 +255,9 @@ export default function App() {
           onSave={() => syncWithSupabase(true)}
           productivityPeriod={productivityPeriod}
           setProductivityPeriod={setProductivityPeriod}
+          userName={userName}
+          isGuest={isGuest}
+          onLogout={() => void signOut()}
         />
 
         <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full md:max-w-6xl mx-auto">
@@ -295,6 +308,8 @@ export default function App() {
               onSync={syncWithSupabase}
               onExport={exportToCSV}
               onImport={handleImportCSV}
+              isGuest={isGuest}
+              userName={userName}
             />
           )}
         </div>
