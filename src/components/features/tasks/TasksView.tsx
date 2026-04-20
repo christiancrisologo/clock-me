@@ -44,6 +44,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const [includeWaitingHours, setIncludeWaitingHours] = useState(false);
 
   // Reset page when filters change
   useEffect(() => {
@@ -171,6 +172,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         totalWaitingHours={metrics.totalWaitingHours}
         devEfficiency={metrics.devEfficiency}
         waitAdjustedEfficiency={metrics.waitAdjustedEfficiency}
+        includeWaitingHours={includeWaitingHours}
+        onToggleWaiting={setIncludeWaitingHours}
       />
 
       {/* Bulk Actions Bar */}

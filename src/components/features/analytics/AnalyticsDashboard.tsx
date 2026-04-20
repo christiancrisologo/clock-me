@@ -275,6 +275,74 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </table>
         </div>
       </section>
+
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+          <h3 className="font-bold text-slate-900 text-sm sm:text-base">Personal Productivity Metrics</h3>
+          <p className="text-xs sm:text-sm text-slate-500">Individual performance framework (IPS, RI, FF)</p>
+        </div>
+        <div className="p-4 sm:p-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* IPS Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200">
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">IPS</p>
+              <p className="text-xs text-blue-700 font-semibold mb-3">Productivity Score</p>
+              <p className="text-2xl sm:text-3xl font-black text-blue-900">{metrics.ips.toFixed(2)}</p>
+              <p className="text-[9px] text-blue-600 mt-2">(Pts Completed / Pts Est.) × Efficiency</p>
+              <div className="mt-3 text-[8px] text-blue-700 space-y-1 bg-blue-100/40 rounded p-2">
+                <p>Completed: {metrics.completedEstimatedPoints.toFixed(0)} / {metrics.totalEstimatedPoints.toFixed(0)} pts</p>
+                <p>Dev Efficiency: {metrics.devEfficiency.toFixed(2)}x</p>
+              </div>
+            </div>
+
+            {/* RI Card */}
+            <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 border border-green-200">
+              <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">RI</p>
+              <p className="text-xs text-green-700 font-semibold mb-3">Reliability Index</p>
+              <p className="text-2xl sm:text-3xl font-black text-green-900">{metrics.ri.toFixed(1)}%</p>
+              <p className="text-[9px] text-green-600 mt-2">(Pts Completed / Pts Planned) × 100</p>
+              <div className="mt-3 text-[8px] text-green-700 space-y-1 bg-green-100/40 rounded p-2">
+                <p>Target: 90%+</p>
+                <p className="font-semibold">{metrics.ri >= 90 ? '✓ On Track' : '⚠ Below Target'}</p>
+              </div>
+            </div>
+
+            {/* FF Card */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 border border-purple-200">
+              <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-1">FF</p>
+              <p className="text-xs text-purple-700 font-semibold mb-3">Focus Factor</p>
+              <p className="text-2xl sm:text-3xl font-black text-purple-900">{(metrics.ff * 100).toFixed(0)}%</p>
+              <p className="text-[9px] text-purple-600 mt-2">Dev Hours / 40-hour shift</p>
+              <div className="mt-3 text-[8px] text-purple-700 space-y-1 bg-purple-100/40 rounded p-2">
+                <p>Dev Hours: {metrics.totalDevHours.toFixed(1)} hrs</p>
+                <p>Meetings: {((1 - metrics.ff) * 40).toFixed(1)} hrs</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Metrics Framework</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[9px] text-slate-600">
+              <div>
+                <p className="font-semibold text-slate-700 mb-2">IPS Interpretation:</p>
+                <ul className="space-y-1 text-slate-600">
+                  <li>• &gt; 1.0: High performer, exceeding targets</li>
+                  <li>• = 1.0: Predictable, on estimate</li>
+                  <li>• &lt; 0.8: Under-performer or blocked</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-700 mb-2">Key Insights:</p>
+                <ul className="space-y-1 text-slate-600">
+                  <li>• RI measures sprint commitment accuracy</li>
+                  <li>• FF reveals meeting/distraction impact</li>
+                  <li>• Combined: holistic productivity view</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

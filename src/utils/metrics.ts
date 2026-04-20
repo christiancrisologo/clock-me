@@ -78,6 +78,10 @@ export interface PerformanceMetricsSummary {
   completedDevSeconds: number;
   completedDevHours: number;
   completedDevEfficiency: number;
+  // Personal Productivity Metrics
+  ips: number; // Individual Productivity Score
+  ri: number; // Individual Reliability Index
+  ff: number; // Focus Factor
 }
 
 export const computePerformanceMetrics = (
@@ -112,6 +116,21 @@ export const computePerformanceMetrics = (
     ? (completedEstimatedHoursFromPoints / (completedDevHours || 1))
     : 0;
 
+  // Personal Productivity Metrics from the framework
+  // 1. IPS (Individual Productivity Score) = (Points Completed / Points Estimated) × Efficiency Ratio
+  const ips = totalEstimatedPoints > 0
+    ? (completedEstimatedPoints / totalEstimatedPoints) * devEfficiency
+    : 0;
+
+  // 2. RI (Individual Reliability Index) = (Points Completed / Points Estimated) × 100
+  const ri = totalEstimatedPoints > 0
+    ? (completedEstimatedPoints / totalEstimatedPoints) * 100
+    : 0;
+
+  // 3. FF (Focus Factor) = Task Hours / Total Shift Hours (40 hrs/week)
+  const TOTAL_SHIFT_HOURS = 40;
+  const ff = totalDevHours > 0 ? Math.min(totalDevHours / TOTAL_SHIFT_HOURS, 1) : 0;
+
   return {
     totalTasksCount: tasks.length,
     completedTasksCount: completedTasks.length,
@@ -128,7 +147,10 @@ export const computePerformanceMetrics = (
     completedEstimatedHoursFromPoints,
     completedDevSeconds,
     completedDevHours,
-    completedDevEfficiency
+    completedDevEfficiency,
+    ips,
+    ri,
+    ff
   };
 };
 

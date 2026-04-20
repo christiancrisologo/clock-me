@@ -14,6 +14,8 @@ interface PerformanceMetricsProps {
   totalWaitingHours: number;
   devEfficiency: number;
   waitAdjustedEfficiency: number;
+  includeWaitingHours?: boolean;
+  onToggleWaiting?: (val: boolean) => void;
 }
 
 export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
@@ -26,8 +28,11 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   totalDevHours,
   totalWaitingHours,
   devEfficiency,
-  waitAdjustedEfficiency
+  waitAdjustedEfficiency,
+  includeWaitingHours = false,
+  onToggleWaiting
 }) => {
+  const displayedEfficiency = includeWaitingHours ? waitAdjustedEfficiency : devEfficiency;
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 gap-2">
@@ -35,13 +40,26 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
           <BarChart3 size={16} className="sm:w-5 sm:h-5 text-brand-600" />
           <h4 className="text-[10px] sm:text-xs font-black text-slate-700 uppercase tracking-widest">Performance Metrics</h4>
         </div>
-        <button 
-          onClick={() => setIsMinimized(!isMinimized)}
-          className="text-[9px] sm:text-[10px] font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 w-fit"
-        >
-          {isMinimized ? 'Show' : 'Hide'}
-          <ChevronDown size={14} className={cn("transition-transform duration-300", !isMinimized && "rotate-180")} />
-        </button>
+        <div className="flex items-center gap-3">
+          {onToggleWaiting && (
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={includeWaitingHours}
+                onChange={(e) => onToggleWaiting(e.target.checked)}
+                className="w-3 h-3 rounded border-slate-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+              />
+              <span className="font-semibold text-slate-700 text-[9px] sm:text-xs">Include Waiting</span>
+            </label>
+          )}
+          <button 
+            onClick={() => setIsMinimized(!isMinimized)}
+            className="text-[9px] sm:text-[10px] font-bold text-brand-600 hover:text-brand-700 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-brand-50 w-fit"
+          >
+            {isMinimized ? 'Show' : 'Hide'}
+            <ChevronDown size={14} className={cn("transition-transform duration-300", !isMinimized && "rotate-180")} />
+          </button>
+        </div>
       </div>
 
       {!isMinimized && (
@@ -84,8 +102,8 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
                     }
                   />
                 </div>
-                <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{devEfficiency.toFixed(2)}</p>
-                <p className="text-[9px] sm:text-xs text-slate-500">Wait-adjusted: {waitAdjustedEfficiency.toFixed(2)}</p>
+              <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{displayedEfficiency.toFixed(2)}</p>
+              <p className="text-[9px] sm:text-xs text-slate-500">{includeWaitingHours ? 'Dev + waiting adjusted' : 'Dev-only efficiency'} • Other: {(includeWaitingHours ? devEfficiency : waitAdjustedEfficiency).toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -107,11 +125,11 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
               </div>
             </div>
             <div className="mt-3 text-[10px] sm:text-xs text-slate-600 space-y-1">
-              <p>
-                Dev Ratio = {totalEstimatedHoursFromPoints.toFixed(2)}h / {totalDevHours.toFixed(2)}h = <span className="font-bold">{devEfficiency.toFixed(2)}</span>
+              <p className={cn(includeWaitingHours ? '' : 'text-brand-600 font-bold')}>
+                Dev-Only: {totalEstimatedHoursFromPoints.toFixed(2)}h / {totalDevHours.toFixed(2)}h = <span className="font-bold">{devEfficiency.toFixed(2)}</span>
               </p>
-              <p>
-                Wait-Adjusted Ratio = {totalEstimatedHoursFromPoints.toFixed(2)}h / {(totalDevHours + totalWaitingHours).toFixed(2)}h = <span className="font-bold">{waitAdjustedEfficiency.toFixed(2)}</span>
+              <p className={cn(includeWaitingHours ? 'text-brand-600 font-bold' : '')}>
+                With Waiting: {totalEstimatedHoursFromPoints.toFixed(2)}h / {(totalDevHours + totalWaitingHours).toFixed(2)}h = <span className="font-bold">{waitAdjustedEfficiency.toFixed(2)}</span>
               </p>
             </div>
           </div>
