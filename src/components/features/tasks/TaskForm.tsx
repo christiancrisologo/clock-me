@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { Task, Sprint } from '../../../types';
 import { TASK_TYPES, TASK_STATUSES } from '../../../constants';
 import { Button } from '../../ui/Button';
@@ -21,6 +21,15 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 }) => {
   const isEditing = !!task;
   const classification = isEditing ? task.classification : addingTaskType;
+  const [saved, setSaved] = React.useState(false);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    onSubmit(e);
+    if (isEditing) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -37,7 +46,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           </Button>
         </div>
         
-        <form onSubmit={onSubmit} className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5 md:space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5 md:space-y-6">
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1.5">
@@ -189,9 +198,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </Button>
             <Button 
               type="submit" 
-              className="flex-1 py-2.5 sm:py-3 text-xs uppercase tracking-widest shadow-lg shadow-brand-100 h-11 sm:h-auto"
+              className={`flex-1 py-2.5 sm:py-3 text-xs uppercase tracking-widest shadow-lg h-11 sm:h-auto transition-all duration-300 ${
+                saved
+                  ? 'bg-green-500 hover:bg-green-500 shadow-green-100 scale-[1.02]'
+                  : 'shadow-brand-100'
+              }`}
             >
-              {isEditing ? 'Save Changes' : 'Create Task'}
+              {saved ? (
+                <span className="flex items-center gap-1.5">
+                  <Check size={14} className="animate-in zoom-in-50 duration-200" />
+                  Saved!
+                </span>
+              ) : isEditing ? 'Save Changes' : 'Create Task'}
             </Button>
           </div>
         </form>

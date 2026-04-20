@@ -158,11 +158,16 @@ export default function App({ userId, isGuest, userName }: AppProps) {
     };
 
     if (editingTask) {
+      const nextTotalSeconds = Number(formData.get('totalSeconds')) || editingTask.totalSeconds;
       updateTask(editingTask.id, {
         ...data,
-        totalSeconds: Number(formData.get('totalSeconds')) || editingTask.totalSeconds
+        totalSeconds: nextTotalSeconds
       });
-      setEditingTask(null);
+      setEditingTask((prev) => prev ? {
+        ...prev,
+        ...data,
+        totalSeconds: nextTotalSeconds
+      } : prev);
     } else {
       addTask(data);
       setIsAddingTask(false);
