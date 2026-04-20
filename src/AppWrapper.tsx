@@ -1,9 +1,17 @@
 import React from 'react';
 import { useAuth } from './hooks/useAuth';
 import { Login } from './components/auth/Login';
+import { SharedDashboardPage } from './components/features/analytics/SharedDashboardPage';
 import App from './App';
+import { getSharedDashboardSnapshotFromUrl } from './utils/share';
 
 const AppWrapper: React.FC = () => {
+  const sharedSnapshot = React.useMemo(() => getSharedDashboardSnapshotFromUrl(), []);
+
+  if (sharedSnapshot) {
+    return <SharedDashboardPage snapshot={sharedSnapshot} />;
+  }
+
   const { session, isLoading, user } = useAuth();
 
   if (isLoading) {

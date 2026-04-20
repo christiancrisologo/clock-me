@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Zap } from 'lucide-react';
+import { BarChart3, Zap, Share2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { 
   BarChart, 
@@ -11,39 +11,58 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { Task, Sprint } from '../../../types';
-import { InfoTooltip } from '../../ui/InfoTooltip';
+import { InfoDialog } from '../../ui/InfoDialog';
 import { HOURS_PER_POINT } from '../../../constants';
-import { computePerformanceMetrics } from '../../../utils/metrics';
+import {
+  buildSprintChartData,
+  computePerformanceMetrics,
+  taskDevSeconds,
+  taskEstimatedHoursFromPoints,
+  taskWaitingSeconds,
+} from '../../../utils/metrics';
 
 import { RefreshCw } from 'lucide-react';
 import { Button } from '../../ui/Button';
 
 interface AnalyticsDashboardProps {
   sprintTasks: Task[];
+  sprints?: Sprint[];
+  selectedSprintId?: string;
+  onSelectSprint?: (sprintId: string) => void;
   currentSprint?: Sprint;
   onSync: () => void;
   isSyncing: boolean;
+  readOnly?: boolean;
+  onShare?: () => void;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   sprintTasks,
+  sprints = [],
+  selectedSprintId,
+  onSelectSprint,
   currentSprint,
   onSync,
-  isSyncing
+  isSyncing,
+  readOnly = false,
+  onShare
 }) => {
   const metrics = computePerformanceMetrics(sprintTasks, ['Ready for QA', 'Code Review']);
   const completedTasks = sprintTasks.filter(t => t.status.toLowerCase() === 'done');
+  const chartData = buildSprintChartData(sprintTasks);
 
-  const chartData = sprintTasks.map(t => {
-    const dev = t.classification === 'sprintly' ? (t.phaseSeconds['In progress'] || 0) : t.totalSeconds;
-    const wait = t.classification === 'sprintly' ? ((t.phaseSeconds['Code Review'] || 0) + (t.phaseSeconds['Testing'] || 0)) : 0;
-    return { 
-      name: t.jiraId || t.title.substring(0, 8), 
-      dev: Number((dev / 3600).toFixed(2)),
-      wait: Number((wait / 3600).toFixed(2)),
-      estimated: Number((((t.estimatedPoints || 0) * HOURS_PER_POINT) || t.estimatedHours).toFixed(2))
-    };
-  });
+  const tableTotals = React.useMemo(() => {
+    return sprintTasks.reduce(
+      (acc, task) => {
+        acc.estimatedPoints += task.estimatedPoints || 0;
+        acc.estimatedHours += taskEstimatedHoursFromPoints(task);
+        acc.devHours += taskDevSeconds(task) / 3600;
+        acc.waitHours += taskWaitingSeconds(task, ['Ready for QA', 'Code Review']) / 3600;
+        return acc;
+      },
+      { estimatedPoints: 0, estimatedHours: 0, devHours: 0, waitHours: 0 }
+    );
+  }, [sprintTasks]);
 
   return (
     <div className="space-y-4 sm:space-y-6 md:space-y-8">
@@ -55,16 +74,48 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               Sprint Time Distribution
             </h3>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 md:gap-6">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onSync}
-                disabled={isSyncing}
-                className="gap-2 text-[9px] sm:text-xs font-bold border-slate-200 h-9 sm:h-auto"
-              >
-                <RefreshCw size={12} className={cn(isSyncing ? 'animate-spin' : '', 'sm:w-3.5 sm:h-3.5')} />
-                {isSyncing ? 'Syncing...' : 'Sync Now'}
-              </Button>
+              {onSelectSprint && sprints.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="analytics-sprint-filter" className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Sprint
+                  </label>
+                  <select
+                    id="analytics-sprint-filter"
+                    value={selectedSprintId || ''}
+                    onChange={(event) => onSelectSprint(event.target.value)}
+                    className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs sm:text-sm font-semibold text-slate-700"
+                  >
+                    {sprints.map((sprint) => (
+                      <option key={sprint.id} value={sprint.id}>{sprint.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {!readOnly && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onSync}
+                  disabled={isSyncing}
+                  className="gap-2 text-[9px] sm:text-xs font-bold border-slate-200 h-9 sm:h-auto"
+                >
+                  <RefreshCw size={12} className={cn(isSyncing ? 'animate-spin' : '', 'sm:w-3.5 sm:h-3.5')} />
+                  {isSyncing ? 'Syncing...' : 'Sync Now'}
+                </Button>
+              )}
+
+              {!readOnly && onShare && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onShare}
+                  className="gap-2 text-[9px] sm:text-xs font-bold border-slate-200 h-9 sm:h-auto"
+                >
+                  <Share2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                  Share Dashboard
+                </Button>
+              )}
               <div className="flex gap-3 sm:gap-4">
                 <span className="flex items-center gap-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   <div className="w-1.5 h-1.5 bg-brand-500 rounded-full" /> Actual
@@ -97,7 +148,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <h3 className="font-bold text-slate-900 mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base">
             <Zap size={18} className="sm:w-5 sm:h-5 text-amber-500" />
             Sprint Efficiency
-            <InfoTooltip 
+            <InfoDialog 
               title="Sprint Efficiency" 
               content={
                 <div className="space-y-2">
@@ -160,6 +211,70 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           subtext={`Completed dev: ${metrics.completedDevHours.toFixed(1)}h / ${metrics.completedEstimatedHoursFromPoints.toFixed(1)}h`} 
         />
       </div>
+
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+          <h3 className="font-bold text-slate-900 text-sm sm:text-base">Sprint Task Summary</h3>
+          <p className="text-xs sm:text-sm text-slate-500">
+            {currentSprint?.name || 'Selected sprint'}: {sprintTasks.length} tasks scoped to this sprint
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Task</th>
+                <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Est. Pts</th>
+                <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Est. Hours</th>
+                <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Dev Work (hrs)</th>
+                <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Wait (hrs)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sprintTasks.map((task) => {
+                const estimatedHours = taskEstimatedHoursFromPoints(task);
+                const devHours = taskDevSeconds(task) / 3600;
+                const waitHours = taskWaitingSeconds(task, ['Ready for QA', 'Code Review']) / 3600;
+
+                return (
+                  <tr key={task.id} className="border-b border-slate-100 last:border-b-0">
+                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">{task.jiraId || task.title}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700">{task.status}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{(task.estimatedPoints || 0).toFixed(1)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{estimatedHours.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{devHours.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{waitHours.toFixed(2)}</td>
+                  </tr>
+                );
+              })}
+
+              {sprintTasks.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                    No tasks found for this sprint.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            {sprintTasks.length > 0 && (
+              <tfoot>
+                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                  <td className="px-4 py-3 text-sm font-black text-slate-900">Totals</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-slate-600">
+                    {completedTasks.length} done / {sprintTasks.length} tasks
+                  </td>
+                  <td className="px-4 py-3 text-sm font-black text-slate-900 text-right">{tableTotals.estimatedPoints.toFixed(1)}</td>
+                  <td className="px-4 py-3 text-sm font-black text-slate-900 text-right">{tableTotals.estimatedHours.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-sm font-black text-slate-900 text-right">{tableTotals.devHours.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-sm font-black text-slate-900 text-right">{tableTotals.waitHours.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </section>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { cn } from '../../../lib/utils';
 import config from '../../../config.json';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Task, Sprint } from '../../../types';
-import { computePerformanceMetrics } from '../../../utils/metrics';
+import { computePerformanceMetrics, filterTasksBySprint } from '../../../utils/metrics';
 import { PerformanceMetrics } from './PerformanceMetrics';
 import { FilterToolbar } from './FilterToolbar';
 import { TaskCard } from './TaskCard';
@@ -107,18 +107,20 @@ export const TasksView: React.FC<TasksViewProps> = ({
     });
   };
 
-  const filteredTasks = tasks.filter(t => {
+  const filteredTasks = (() => {
     if (statsFilter === 'sprint') {
-      if (selectedSprintId === 'all') return true;
-      const selectedSprint = sprints.find(s => s.id === selectedSprintId);
-      return t.sprintId === selectedSprintId || t.sprintName === selectedSprint?.name;
+      return filterTasksBySprint(tasks, sprints, selectedSprintId);
     }
+
     if (statsFilter === 'date') {
-      const taskDate = new Date(t.createdAt).toISOString().split('T')[0];
-      return taskDate >= dateFrom && taskDate <= dateTo;
+      return tasks.filter((task) => {
+        const taskDate = new Date(task.createdAt).toISOString().split('T')[0];
+        return taskDate >= dateFrom && taskDate <= dateTo;
+      });
     }
-    return true;
-  });
+
+    return tasks;
+  })();
 
   const metrics = computePerformanceMetrics(filteredTasks, ['Ready for QA', 'Code Review']);
   const completedTasks = filteredTasks.filter(t => t.status.toLowerCase() === 'done');

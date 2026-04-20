@@ -16,8 +16,9 @@ import { useUIState } from './hooks/useUIState';
 import { AUTO_SYNC_DEFAULT, VIEWS } from './constants';
 import { Task } from './types';
 
-import { calculateSprintMetrics } from './utils/metrics';
+import { filterTasksBySprint } from './utils/metrics';
 import { parseTasksFromCSV } from './utils/csv';
+import { createSharedDashboardLink } from './utils/share';
 import { CheckCircle, AlertCircle, Loader, FileUp } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 
@@ -41,6 +42,7 @@ export default function App({ userId, isGuest, userName }: AppProps) {
   const [addingTaskType, setAddingTaskType] = useState<'regular' | 'sprintly'>('regular');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [productivityPeriod, setProductivityPeriod] = useState<'day' | 'week' | 'month'>('week');
+  const [analyticsSprintId, setAnalyticsSprintId] = useState<string>('');
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importProgress, setImportProgress] = useState<{ current: number, total: number } | null>(null);
@@ -115,6 +117,22 @@ export default function App({ userId, isGuest, userName }: AppProps) {
 
   // Custom Timer Hook
   useTimer(activeTaskIds, setTasks);
+
+  React.useEffect(() => {
+    if (activeSprints.length === 0) {
+      if (analyticsSprintId) setAnalyticsSprintId('');
+      return;
+    }
+
+    const selectedStillExists = activeSprints.some((sprint) => sprint.id === analyticsSprintId);
+    if (selectedStillExists) return;
+
+    const fallbackSprintId = currentSprint && activeSprints.some((sprint) => sprint.id === currentSprint.id)
+      ? currentSprint.id
+      : activeSprints[0].id;
+
+    setAnalyticsSprintId(fallbackSprintId);
+  }, [activeSprints, currentSprint, analyticsSprintId]);
 
   const handleTaskSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -235,8 +253,37 @@ export default function App({ userId, isGuest, userName }: AppProps) {
     link.click();
   };
 
-  const completedTasks = tasks.filter(t => t.status.toLowerCase() === 'done');
-  const sprintTasks = tasks.filter(t => t.sprintId === currentSprint?.id);
+  const selectedAnalyticsSprint = activeSprints.find((sprint) => sprint.id === analyticsSprintId);
+  const sprintTasks = React.useMemo(
+    () => filterTasksBySprint(tasks, activeSprints, analyticsSprintId),
+    [tasks, activeSprints, analyticsSprintId]
+  );
+
+  const handleShareDashboard = async () => {
+    const link = createSharedDashboardLink({
+      version: 'v1',
+      generatedAt: Date.now(),
+      tasks: sprintTasks,
+      sprints: selectedAnalyticsSprint
+        ? [{ ...selectedAnalyticsSprint, isCurrent: true }]
+        : activeSprints,
+    });
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setNotification({
+        message: 'Dashboard share link copied to clipboard.',
+        type: 'success'
+      });
+    } catch {
+      setNotification({
+        message: `Share link: ${link}`,
+        type: 'success'
+      });
+    }
+
+    setTimeout(() => setNotification(null), 6000);
+  };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50/50">
@@ -292,9 +339,13 @@ export default function App({ userId, isGuest, userName }: AppProps) {
           {view === VIEWS.DASHBOARD && (
             <AnalyticsDashboard
               sprintTasks={sprintTasks}
-              currentSprint={currentSprint}
+              currentSprint={selectedAnalyticsSprint}
+              sprints={activeSprints}
+              selectedSprintId={analyticsSprintId}
+              onSelectSprint={setAnalyticsSprintId}
               onSync={syncWithSupabase}
               isSyncing={isSyncing}
+              onShare={handleShareDashboard}
             />
           )}
 

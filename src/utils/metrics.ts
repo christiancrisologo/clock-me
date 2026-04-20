@@ -15,6 +15,28 @@ export interface AnalyticsSnapshot {
   updatedAt: number;
 }
 
+export const filterTasksBySprint = (
+  tasks: Task[],
+  sprints: Sprint[],
+  sprintId?: string
+): Task[] => {
+  if (!sprintId || sprintId === 'all') return tasks;
+
+  const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
+  const selectedName = selectedSprint?.name;
+
+  return tasks.filter((task) => {
+    if (task.sprintId === sprintId) return true;
+
+    if (selectedName && task.sprintName === selectedName) return true;
+
+    // Fallback for tasks/sprints created from CSV where sprint id can be absent
+    if (!selectedName && task.sprintName === sprintId) return true;
+
+    return false;
+  });
+};
+
 export const taskEstimatedHoursFromPoints = (task: Task): number => {
   const computed = (task.estimatedPoints || 0) * HOURS_PER_POINT;
   return computed > 0 ? computed : (task.estimatedHours || 0);
@@ -118,18 +140,14 @@ export const calculateEfficiency = (tasks: Task[]) => {
 };
 
 export const buildSprintChartData = (tasks: Task[]) => tasks.map((task) => {
-  const dev = task.classification === 'sprintly'
-    ? (task.phaseSeconds['In progress'] || 0)
-    : task.totalSeconds;
-  const wait = task.classification === 'sprintly'
-    ? ((task.phaseSeconds['Code Review'] || 0) + (task.phaseSeconds['Testing'] || 0))
-    : 0;
+  const dev = taskDevSeconds(task);
+  const wait = taskWaitingSeconds(task, DEFAULT_WAITING_PHASES);
 
   return {
     name: task.jiraId || task.title.substring(0, 8),
     dev: Number((dev / 3600).toFixed(2)),
     wait: Number((wait / 3600).toFixed(2)),
-    estimated: taskEstimatedHoursFromPoints(task)
+    estimated: Number(taskEstimatedHoursFromPoints(task).toFixed(2))
   };
 });
 
@@ -148,12 +166,8 @@ export const buildProductivityChartData = (tasks: Task[], period: ProductivityPe
       grouped[key] = { name: key, devHours: 0, waitHours: 0, points: 0 };
     }
 
-    const dev = task.classification === 'sprintly'
-      ? (task.phaseSeconds['In progress'] || 0)
-      : task.totalSeconds;
-    const wait = task.classification === 'sprintly'
-      ? ((task.phaseSeconds['Code Review'] || 0) + (task.phaseSeconds['Testing'] || 0))
-      : 0;
+    const dev = taskDevSeconds(task);
+    const wait = taskWaitingSeconds(task, DEFAULT_WAITING_PHASES);
 
     grouped[key].devHours += dev / 3600;
     grouped[key].waitHours += wait / 3600;
@@ -168,10 +182,10 @@ export const buildProductivityChartData = (tasks: Task[], period: ProductivityPe
 
 export const calculateTopPerformingTasks = (tasks: Task[]) => (
   [...tasks]
-    .filter((task) => task.status.toLowerCase() === 'done' && task.totalSeconds > 0)
+    .filter((task) => task.status.toLowerCase() === 'done' && taskDevSeconds(task) > 0)
     .sort((left, right) => {
-      const leftEfficiency = taskEstimatedHoursFromPoints(left) / (left.totalSeconds / 3600);
-      const rightEfficiency = taskEstimatedHoursFromPoints(right) / (right.totalSeconds / 3600);
+      const leftEfficiency = taskEstimatedHoursFromPoints(left) / (taskDevSeconds(left) / 3600);
+      const rightEfficiency = taskEstimatedHoursFromPoints(right) / (taskDevSeconds(right) / 3600);
 
       return rightEfficiency - leftEfficiency;
     })
@@ -180,14 +194,14 @@ export const calculateTopPerformingTasks = (tasks: Task[]) => (
       id: task.id,
       title: task.title,
       jiraId: task.jiraId || null,
-      efficiency: Number(((taskEstimatedHoursFromPoints(task) / (task.totalSeconds / 3600)) * 100).toFixed(2)),
+      efficiency: Number(((taskEstimatedHoursFromPoints(task) / (taskDevSeconds(task) / 3600)) * 100).toFixed(2)),
       estimatedHours: taskEstimatedHoursFromPoints(task),
-      totalSeconds: task.totalSeconds
+      totalSeconds: taskDevSeconds(task)
     }))
 );
 
 export const calculateSprintMetrics = (tasks: Task[], currentSprintId?: string) => {
-  const sprintTasks = tasks.filter(t => t.sprintId === currentSprintId);
+  const sprintTasks = filterTasksBySprint(tasks, [], currentSprintId);
   const completedTasks = sprintTasks.filter(t => t.status.toLowerCase() === 'done');
   
   const totalTimeSpent = sprintTasks.reduce((acc, t) => acc + t.totalSeconds, 0);
@@ -225,7 +239,7 @@ export const buildAnalyticsSnapshots = (tasks: Task[], sprints: Sprint[]): Analy
   });
 
   const sprintSnapshots = Array.from(sprintMap.values()).map((sprint) => {
-    const sprintTasks = tasks.filter((task) => task.sprintId === sprint.id);
+    const sprintTasks = filterTasksBySprint(tasks, Array.from(sprintMap.values()), sprint.id);
     const sprintCompletedTasks = sprintTasks.filter((task) => task.status.toLowerCase() === 'done');
     const sprintTotalTime = sprintTasks.reduce((total, task) => total + task.totalSeconds, 0);
     const velocityPoints = sprintCompletedTasks.reduce((total, task) => total + task.estimatedPoints, 0);
@@ -249,7 +263,7 @@ export const buildAnalyticsSnapshots = (tasks: Task[], sprints: Sprint[]): Analy
           capacityHours: sprint.capacityHours,
           isCurrent: sprint.isCurrent
         },
-        totalTimeSpent,
+        totalTimeSpent: sprintTotalTime,
         totalTimeSpentSeconds: sprintTotalTime,
         efficiency: calculateEfficiency(sprintTasks),
         velocityPoints,
