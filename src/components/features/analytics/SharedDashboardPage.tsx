@@ -2,7 +2,6 @@ import React from 'react';
 import { Clock, Eye, Calendar } from 'lucide-react';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { SharedDashboardSnapshot } from '../../../utils/share';
-import { taskDevSeconds } from '../../../utils/metrics';
 
 interface SharedDashboardPageProps {
   snapshot: SharedDashboardSnapshot;
@@ -53,39 +52,6 @@ export const SharedDashboardPage: React.FC<SharedDashboardPageProps> = ({ snapsh
           isSyncing={false}
           readOnly
         />
-
-        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
-            <h2 className="text-base sm:text-lg font-black text-slate-900">Shared Tasks ({snapshot.tasks.length})</h2>
-            <p className="text-xs sm:text-sm text-slate-500">Read-only task summary included in this snapshot</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px]">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Task</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
-                  <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sprint</th>
-                  <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Est. Pts</th>
-                  <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Dev Hours</th>
-                  <th className="text-right px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Hours</th>
-                </tr>
-              </thead>
-              <tbody>
-                {snapshot.tasks.map((task) => (
-                  <tr key={task.id} className="border-b border-slate-100 last:border-b-0">
-                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">{task.jiraId || task.title}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700">{task.status}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700">{task.sprintName || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{task.estimatedPoints || 0}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{(taskDevSeconds(task) / 3600).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 text-right">{(task.totalSeconds / 3600).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
       </main>
     </div>
   );
