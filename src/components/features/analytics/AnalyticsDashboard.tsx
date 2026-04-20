@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Zap, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { BarChart3, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { 
   BarChart, 
@@ -12,6 +12,8 @@ import {
 } from 'recharts';
 import { Task, Sprint } from '../../../types';
 import { InfoTooltip } from '../../ui/InfoTooltip';
+import { HOURS_PER_POINT } from '../../../constants';
+import { computePerformanceMetrics } from '../../../utils/metrics';
 
 import { RefreshCw } from 'lucide-react';
 import { Button } from '../../ui/Button';
@@ -19,7 +21,6 @@ import { Button } from '../../ui/Button';
 interface AnalyticsDashboardProps {
   sprintTasks: Task[];
   currentSprint?: Sprint;
-  efficiency: number;
   onSync: () => void;
   isSyncing: boolean;
 }
@@ -27,11 +28,10 @@ interface AnalyticsDashboardProps {
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   sprintTasks,
   currentSprint,
-  efficiency,
   onSync,
   isSyncing
 }) => {
-  const totalTimeSpent = sprintTasks.reduce((acc, t) => acc + t.totalSeconds, 0);
+  const metrics = computePerformanceMetrics(sprintTasks, ['Ready for QA', 'Code Review']);
   const completedTasks = sprintTasks.filter(t => t.status.toLowerCase() === 'done');
 
   const chartData = sprintTasks.map(t => {
@@ -41,7 +41,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       name: t.jiraId || t.title.substring(0, 8), 
       dev: Number((dev / 3600).toFixed(2)),
       wait: Number((wait / 3600).toFixed(2)),
-      estimated: t.estimatedHours
+      estimated: Number((((t.estimatedPoints || 0) * HOURS_PER_POINT) || t.estimatedHours).toFixed(2))
     };
   });
 
@@ -114,18 +114,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 <circle
                   cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="12" fill="transparent"
                   strokeDasharray={502.4}
-                  strokeDashoffset={502.4 * (1 - Math.min(1, efficiency / 2))}
+                  strokeDashoffset={502.4 * (1 - Math.min(1, metrics.devEfficiency / 2))}
                   className="text-brand-500 transition-all duration-1000"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl sm:text-4xl font-black text-slate-900">{efficiency.toFixed(1)}</span>
+                <span className="text-2xl sm:text-4xl font-black text-slate-900">{metrics.devEfficiency.toFixed(1)}</span>
                 <span className="text-[8px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Ratio</span>
               </div>
             </div>
             <div className="mt-4 sm:mt-6 md:mt-8 text-center px-2">
               <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                Efficiency ratio calculated from <span className="font-bold text-slate-900">{sprintTasks.length}</span> committed tasks.
+                Dev efficiency uses <span className="font-bold text-slate-900">estimated points x {HOURS_PER_POINT}</span> against dev hours.
+              </p>
+              <p className="text-xs text-slate-400 mt-2">
+                Completed-only ratio: <span className="font-bold text-slate-700">{metrics.completedDevEfficiency.toFixed(1)}</span>
               </p>
             </div>
           </div>
@@ -134,27 +137,27 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-4">
         <StatCard 
-          label="Sprint Velocity" 
-          value={completedTasks.reduce((acc, t) => acc + t.estimatedHours, 0).toString()} 
+          label="Estimated Scope" 
+          value={metrics.totalEstimatedPoints.toFixed(1)} 
           suffix="pts" 
-          subtext={`Points delivered in ${currentSprint?.name}`} 
+          subtext={`Total estimated points in ${currentSprint?.name}`} 
         />
         <StatCard 
-          label="Sprint Time" 
-          value={(totalTimeSpent / 3600).toFixed(1)} 
+          label="Completed Tasks" 
+          value={completedTasks.length.toString()} 
+          suffix={`/ ${sprintTasks.length}`} 
+          subtext="How many tasks are completed" 
+        />
+        <StatCard 
+          label="Total Dev Work" 
+          value={metrics.totalDevHours.toFixed(1)} 
           suffix="hrs" 
-          subtext="Active time for this sprint" 
+          subtext="Development hours logged" 
         />
         <StatCard 
-          label="Committed Tasks" 
-          value={sprintTasks.length.toString()} 
-          subtext="Total tasks in current sprint" 
-        />
-        <StatCard 
-          label="Completion Rate" 
-          value={sprintTasks.length > 0 ? Math.round((completedTasks.length / sprintTasks.length) * 100).toString() : '0'} 
-          suffix="%" 
-          subtext="Tasks finished vs committed" 
+          label="Dev vs Estimate" 
+          value={`${metrics.totalDevHours.toFixed(1)}h / ${metrics.totalEstimatedHoursFromPoints.toFixed(1)}h`}
+          subtext={`Completed dev: ${metrics.completedDevHours.toFixed(1)}h / ${metrics.completedEstimatedHoursFromPoints.toFixed(1)}h`} 
         />
       </div>
     </div>

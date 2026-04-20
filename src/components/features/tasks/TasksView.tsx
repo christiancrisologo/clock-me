@@ -3,6 +3,7 @@ import { cn } from '../../../lib/utils';
 import config from '../../../config.json';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Task, Sprint } from '../../../types';
+import { computePerformanceMetrics } from '../../../utils/metrics';
 import { PerformanceMetrics } from './PerformanceMetrics';
 import { FilterToolbar } from './FilterToolbar';
 import { TaskCard } from './TaskCard';
@@ -119,16 +120,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
     return true;
   });
 
-  const totalTimeSpent = filteredTasks.reduce((acc, t) => acc + t.totalSeconds, 0);
-  const totalEstimated = filteredTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+  const metrics = computePerformanceMetrics(filteredTasks, ['Ready for QA', 'Code Review']);
   const completedTasks = filteredTasks.filter(t => t.status.toLowerCase() === 'done');
-
-  const devTime = filteredTasks.reduce((acc, t) => {
-    if (t.classification === 'sprintly') return acc + (t.phaseSeconds['In progress'] || 0);
-    return acc + t.totalSeconds;
-  }, 0);
-
-  const efficiency = totalEstimated > 0 ? (completedTasks.reduce((acc, t) => acc + t.estimatedHours, 0) / (devTime / 3600 || 1)) : 0;
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     const aActive = activeTaskIds.includes(a.id);
@@ -165,6 +158,19 @@ export const TasksView: React.FC<TasksViewProps> = ({
         setDateTo={setDateTo}
       />
 
+      <PerformanceMetrics
+        isMinimized={isStatsMinimized}
+        setIsMinimized={setIsStatsMinimized}
+        totalTimeSpent={metrics.totalTimeSpentSeconds}
+        completedTasksCount={completedTasks.length}
+        totalTasksCount={filteredTasks.length}
+        totalEstimatedHoursFromPoints={metrics.totalEstimatedHoursFromPoints}
+        totalDevHours={metrics.totalDevHours}
+        totalWaitingHours={metrics.totalWaitingHours}
+        devEfficiency={metrics.devEfficiency}
+        waitAdjustedEfficiency={metrics.waitAdjustedEfficiency}
+      />
+
       {/* Bulk Actions Bar */}
       <div className={cn(
         "flex items-center justify-between px-4 py-2 bg-white rounded-xl border transition-all duration-300",
@@ -191,15 +197,6 @@ export const TasksView: React.FC<TasksViewProps> = ({
           Delete Selected
         </Button>
       </div>
-
-      <PerformanceMetrics
-        isMinimized={isStatsMinimized}
-        setIsMinimized={setIsStatsMinimized}
-        totalTimeSpent={totalTimeSpent}
-        completedTasksCount={completedTasks.length}
-        totalTasksCount={filteredTasks.length}
-        efficiency={efficiency}
-      />
 
       <div className="space-y-4">
         {sortedTasks.length === 0 ? (

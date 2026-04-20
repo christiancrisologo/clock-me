@@ -9,7 +9,11 @@ interface PerformanceMetricsProps {
   totalTimeSpent: number;
   completedTasksCount: number;
   totalTasksCount: number;
-  efficiency: number;
+  totalEstimatedHoursFromPoints: number;
+  totalDevHours: number;
+  totalWaitingHours: number;
+  devEfficiency: number;
+  waitAdjustedEfficiency: number;
 }
 
 export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
@@ -18,7 +22,11 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
   totalTimeSpent,
   completedTasksCount,
   totalTasksCount,
-  efficiency
+  totalEstimatedHoursFromPoints,
+  totalDevHours,
+  totalWaitingHours,
+  devEfficiency,
+  waitAdjustedEfficiency
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -62,18 +70,49 @@ export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
                     title="Dev Efficiency" 
                     content={
                       <div className="space-y-3">
-                        <p>Measures your productivity during active development phases compared to your initial estimates.</p>
+                        <p>Measures productivity with estimates converted from points and compared to development time.</p>
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                           <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Formula</p>
-                          <p className="font-mono text-xs text-brand-600">(Σ Estimated Hours / Σ Active Dev Hours) × 100</p>
+                          <p className="font-mono text-xs text-brand-600">Σ(Estimated Points x Hours/Point) / Σ(Dev Hours)</p>
                         </div>
-                        <p className="text-xs text-slate-500">Note: For single tasks, total time is used as dev time. For sprintly tasks, only the "In Progress" phase time is counted.</p>
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Wait-Adjusted</p>
+                          <p className="font-mono text-xs text-brand-600">Σ(Estimated Points x Hours/Point) / Σ(Dev Hours + Waiting Hours)</p>
+                        </div>
+                        <p className="text-xs text-slate-500">Waiting Hours include time in "Ready for QA" and "Code Review" before release readiness.</p>
                       </div>
                     }
                   />
                 </div>
-                <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{(efficiency * 100).toFixed(0)}%</p>
+                <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">{devEfficiency.toFixed(2)}</p>
+                <p className="text-[9px] sm:text-xs text-slate-500">Wait-adjusted: {waitAdjustedEfficiency.toFixed(2)}</p>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-5 sm:mt-6 bg-slate-50 rounded-xl border border-slate-100 p-3 sm:p-4">
+            <p className="text-[9px] sm:text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Computation Context</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">Estimated Hours (From Points)</p>
+                <p className="text-sm sm:text-base font-black text-slate-900">{totalEstimatedHoursFromPoints.toFixed(2)}h</p>
+              </div>
+              <div>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">Total Dev Hours</p>
+                <p className="text-sm sm:text-base font-black text-slate-900">{totalDevHours.toFixed(2)}h</p>
+              </div>
+              <div>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase">Total Waiting Hours</p>
+                <p className="text-sm sm:text-base font-black text-slate-900">{totalWaitingHours.toFixed(2)}h</p>
+              </div>
+            </div>
+            <div className="mt-3 text-[10px] sm:text-xs text-slate-600 space-y-1">
+              <p>
+                Dev Ratio = {totalEstimatedHoursFromPoints.toFixed(2)}h / {totalDevHours.toFixed(2)}h = <span className="font-bold">{devEfficiency.toFixed(2)}</span>
+              </p>
+              <p>
+                Wait-Adjusted Ratio = {totalEstimatedHoursFromPoints.toFixed(2)}h / {(totalDevHours + totalWaitingHours).toFixed(2)}h = <span className="font-bold">{waitAdjustedEfficiency.toFixed(2)}</span>
+              </p>
             </div>
           </div>
         </div>

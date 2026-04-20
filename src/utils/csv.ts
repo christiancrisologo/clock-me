@@ -1,5 +1,6 @@
 import { Task } from '../types';
 import config from '../config.json';
+import { HOURS_PER_POINT } from '../constants';
 
 export const parseTasksFromCSV = (content: string): Partial<Task>[] => {
   const lines = content.split('\n').filter(line => line.trim() !== '');
@@ -48,13 +49,13 @@ export const parseTasksFromCSV = (content: string): Partial<Task>[] => {
         case 'resolved':
           task[internalKey] = new Date(cleanVal).getTime();
           break;
-        case 'estimatedPoints':
         case 'estimatedHours':
         case 'totalSeconds':
+        case 'estimatedPoints':
         case 'storyPoints':
           task[internalKey] = Number(cleanVal);
-          if (internalKey === 'storyPoints') {
-            task.estimatedPoints = Number(cleanVal);
+          if (['storyPoints', 'estimatedPoints'].includes(internalKey)) {
+            task.estimatedHours = Number(cleanVal) * HOURS_PER_POINT;
           }
           break;
         case 'sprint':

@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { Sprint, Task } from '../types';
+import { HOURS_PER_POINT } from '../constants';
 
 export type ProductivityPeriod = 'day' | 'week' | 'month';
 
@@ -14,22 +15,106 @@ export interface AnalyticsSnapshot {
   updatedAt: number;
 }
 
-export const calculateEfficiency = (tasks: Task[]) => {
-  const totalEst = tasks.reduce((acc, t) => acc + t.estimatedHours, 0);
-  const devSec = tasks.reduce((acc, t) => {
-    if (t.classification === 'sprintly') {
-      // For sprintly tasks, we only count time spent in 'In progress'
-      return acc + (t.phaseSeconds['In progress'] || 0);
-    }
-    // For regular tasks, total time spent is considered dev time
-    return acc + t.totalSeconds;
-  }, 0);
-  
-  const completedEst = tasks
-    .filter(t => t.status.toLowerCase() === 'done')
-    .reduce((acc, t) => acc + t.estimatedHours, 0);
+export const taskEstimatedHoursFromPoints = (task: Task): number => {
+  const computed = (task.estimatedPoints || 0) * HOURS_PER_POINT;
+  return computed > 0 ? computed : (task.estimatedHours || 0);
+};
 
-  return totalEst > 0 ? (completedEst / (devSec / 3600 || 1)) : 0;
+export const taskDevSeconds = (task: Task): number => {
+  if (task.classification === 'sprintly') {
+    return (task.phaseSeconds['In progress'] || 0) ||  task.totalSeconds;
+  }
+
+  return task.totalSeconds;
+};
+
+export const DEFAULT_WAITING_PHASES = ['Ready for QA', 'Code Review'] as const;
+
+export const taskWaitingSeconds = (
+  task: Task,
+  waitingPhases: readonly string[] = DEFAULT_WAITING_PHASES
+): number => {
+  if (task.classification !== 'sprintly') return 0;
+
+  return waitingPhases.reduce((acc, phase) => acc + (task.phaseSeconds[phase] || 0), 0);
+};
+
+export interface PerformanceMetricsSummary {
+  totalTasksCount: number;
+  completedTasksCount: number;
+  totalEstimatedPoints: number;
+  totalEstimatedHoursFromPoints: number;
+  totalTimeSpentSeconds: number;
+  totalDevSeconds: number;
+  totalDevHours: number;
+  totalWaitingSeconds: number;
+  totalWaitingHours: number;
+  devEfficiency: number;
+  waitAdjustedEfficiency: number;
+  completedEstimatedPoints: number;
+  completedEstimatedHoursFromPoints: number;
+  completedDevSeconds: number;
+  completedDevHours: number;
+  completedDevEfficiency: number;
+}
+
+export const computePerformanceMetrics = (
+  tasks: Task[],
+  waitingPhases: readonly string[] = DEFAULT_WAITING_PHASES
+): PerformanceMetricsSummary => {
+  const completedTasks = tasks.filter((task) => task.status.toLowerCase() === 'done');
+
+  const totalEstimatedPoints = tasks.reduce((acc, task) => acc + (task.estimatedPoints || 0), 0);
+  const totalEstimatedHoursFromPoints = tasks.reduce((acc, task) => acc + taskEstimatedHoursFromPoints(task), 0);
+  const totalTimeSpentSeconds = tasks.reduce((acc, task) => acc + task.totalSeconds, 0);
+  const totalDevSeconds = tasks.reduce((acc, task) => acc + taskDevSeconds(task), 0);
+  const totalWaitingSeconds = tasks.reduce((acc, task) => acc + taskWaitingSeconds(task, waitingPhases), 0);
+
+  const completedEstimatedPoints = completedTasks.reduce((acc, task) => acc + (task.estimatedPoints || 0), 0);
+  const completedEstimatedHoursFromPoints = completedTasks.reduce((acc, task) => acc + taskEstimatedHoursFromPoints(task), 0);
+  const completedDevSeconds = completedTasks.reduce((acc, task) => acc + taskDevSeconds(task), 0);
+
+  const totalDevHours = totalDevSeconds / 3600;
+  const totalWaitingHours = totalWaitingSeconds / 3600;
+  const completedDevHours = completedDevSeconds / 3600;
+
+  const devEfficiency = totalEstimatedHoursFromPoints > 0
+    ? (totalEstimatedHoursFromPoints / (totalDevHours || 1))
+    : 0;
+
+  const waitAdjustedEfficiency = totalEstimatedHoursFromPoints > 0
+    ? (totalEstimatedHoursFromPoints / ((totalDevHours + totalWaitingHours) || 1))
+    : 0;
+
+  const completedDevEfficiency = completedEstimatedHoursFromPoints > 0
+    ? (completedEstimatedHoursFromPoints / (completedDevHours || 1))
+    : 0;
+
+  return {
+    totalTasksCount: tasks.length,
+    completedTasksCount: completedTasks.length,
+    totalEstimatedPoints,
+    totalEstimatedHoursFromPoints,
+    totalTimeSpentSeconds,
+    totalDevSeconds,
+    totalDevHours,
+    totalWaitingSeconds,
+    totalWaitingHours,
+    devEfficiency,
+    waitAdjustedEfficiency,
+    completedEstimatedPoints,
+    completedEstimatedHoursFromPoints,
+    completedDevSeconds,
+    completedDevHours,
+    completedDevEfficiency
+  };
+};
+
+export const calculateEfficiency = (tasks: Task[]) => {
+  const totalEstimatedHours = tasks.reduce((acc, task) => acc + taskEstimatedHoursFromPoints(task), 0);
+  const totalDevSeconds = tasks.reduce((acc, task) => acc + taskDevSeconds(task), 0);
+
+  return totalEstimatedHours > 0 ? (totalEstimatedHours / (totalDevSeconds / 3600 || 1)) : 0;
 };
 
 export const buildSprintChartData = (tasks: Task[]) => tasks.map((task) => {
@@ -44,7 +129,7 @@ export const buildSprintChartData = (tasks: Task[]) => tasks.map((task) => {
     name: task.jiraId || task.title.substring(0, 8),
     dev: Number((dev / 3600).toFixed(2)),
     wait: Number((wait / 3600).toFixed(2)),
-    estimated: task.estimatedHours
+    estimated: taskEstimatedHoursFromPoints(task)
   };
 });
 
@@ -85,8 +170,8 @@ export const calculateTopPerformingTasks = (tasks: Task[]) => (
   [...tasks]
     .filter((task) => task.status.toLowerCase() === 'done' && task.totalSeconds > 0)
     .sort((left, right) => {
-      const leftEfficiency = left.estimatedHours / (left.totalSeconds / 3600);
-      const rightEfficiency = right.estimatedHours / (right.totalSeconds / 3600);
+      const leftEfficiency = taskEstimatedHoursFromPoints(left) / (left.totalSeconds / 3600);
+      const rightEfficiency = taskEstimatedHoursFromPoints(right) / (right.totalSeconds / 3600);
 
       return rightEfficiency - leftEfficiency;
     })
@@ -95,8 +180,8 @@ export const calculateTopPerformingTasks = (tasks: Task[]) => (
       id: task.id,
       title: task.title,
       jiraId: task.jiraId || null,
-      efficiency: Number(((task.estimatedHours / (task.totalSeconds / 3600)) * 100).toFixed(2)),
-      estimatedHours: task.estimatedHours,
+      efficiency: Number(((taskEstimatedHoursFromPoints(task) / (task.totalSeconds / 3600)) * 100).toFixed(2)),
+      estimatedHours: taskEstimatedHoursFromPoints(task),
       totalSeconds: task.totalSeconds
     }))
 );
@@ -143,7 +228,7 @@ export const buildAnalyticsSnapshots = (tasks: Task[], sprints: Sprint[]): Analy
     const sprintTasks = tasks.filter((task) => task.sprintId === sprint.id);
     const sprintCompletedTasks = sprintTasks.filter((task) => task.status.toLowerCase() === 'done');
     const sprintTotalTime = sprintTasks.reduce((total, task) => total + task.totalSeconds, 0);
-    const velocityPoints = sprintCompletedTasks.reduce((total, task) => total + task.estimatedHours, 0);
+    const velocityPoints = sprintCompletedTasks.reduce((total, task) => total + task.estimatedPoints, 0);
     const completionRate = sprintTasks.length > 0
       ? Math.round((sprintCompletedTasks.length / sprintTasks.length) * 100)
       : 0;
@@ -210,7 +295,7 @@ export const buildAnalyticsSnapshots = (tasks: Task[], sprints: Sprint[]): Analy
       completedTaskCount: completedTasks.length,
       payload: {
         totalTimeSpentSeconds: totalTimeSpent,
-        totalEstimatedHours: Number(tasks.reduce((total, task) => total + task.estimatedHours, 0).toFixed(2)),
+        totalEstimatedHours: Number(tasks.reduce((total, task) => total + taskEstimatedHoursFromPoints(task), 0).toFixed(2)),
         efficiency: calculateEfficiency(tasks),
         topPerformingTasks,
         currentSprintId: sprints.find((sprint) => sprint.isCurrent)?.id ?? null

@@ -11,9 +11,14 @@
   "taskStatuses": [
     "To do",
     "In progress",
-    "Code Review",
+    "Done",
     "Testing",
-    "Done"
+    "Code Review",
+    "Ready for QA",
+    "Ready for Prod",
+    "In Development",
+    "On Staging",
+    "Closed"
   ],
   "autoSync": true,
   "fieldMatches": {
@@ -94,5 +99,6 @@
     ]
   },
   "totalTaskPerPage": 10,
-  "pagination": true
+  "pagination": true,
+  "jiraBaseURL": "https://your-domain.atlassian.net"
 }

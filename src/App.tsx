@@ -119,6 +119,12 @@ export default function App({ userId, isGuest, userName }: AppProps) {
   const handleTaskSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const submittedClassification = formData.get('classification');
+    const safeClassification: 'regular' | 'sprintly' =
+      submittedClassification === 'sprintly' || submittedClassification === 'regular'
+        ? submittedClassification
+        : (editingTask?.classification || addingTaskType);
+
     const data = {
       title: formData.get('title') as string,
       jiraId: formData.get('jiraId') as string,
@@ -130,7 +136,7 @@ export default function App({ userId, isGuest, userName }: AppProps) {
       createdAt: formData.get('createdAt') ? new Date(formData.get('createdAt') as string).getTime() : undefined,
       link: formData.get('link') as string || undefined,
       status: formData.get('status') as string || 'To do',
-      classification: formData.get('classification') as 'regular' | 'sprintly'
+      classification: safeClassification
     };
 
     if (editingTask) {
@@ -287,7 +293,6 @@ export default function App({ userId, isGuest, userName }: AppProps) {
             <AnalyticsDashboard
               sprintTasks={sprintTasks}
               currentSprint={currentSprint}
-              efficiency={calculateSprintMetrics(tasks, currentSprint?.id).efficiency}
               onSync={syncWithSupabase}
               isSyncing={isSyncing}
             />
