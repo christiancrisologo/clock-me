@@ -39,6 +39,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
 }) => {
   const [statsFilter, setStatsFilter] = useState<'sprint' | 'date'>('sprint');
   const [selectedSprintId, setSelectedSprintId] = useState<string>('all');
+  const [taskSearch, setTaskSearch] = useState('');
   const [dateFrom, setDateFrom] = useState<string>(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [dateTo, setDateTo] = useState<string>(new Date().toISOString().split('T')[0]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,7 +51,7 @@ export const TasksView: React.FC<TasksViewProps> = ({
   useEffect(() => {
     setCurrentPage(1);
     setSelectedTaskIds(new Set());
-  }, [statsFilter, selectedSprintId, dateFrom, dateTo]);
+  }, [statsFilter, selectedSprintId, taskSearch, dateFrom, dateTo]);
   
   // Modal states
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
@@ -109,18 +110,25 @@ export const TasksView: React.FC<TasksViewProps> = ({
   };
 
   const filteredTasks = (() => {
-    if (statsFilter === 'sprint') {
-      return filterTasksBySprint(tasks, sprints, selectedSprintId);
-    }
+    const baseTasks = (() => {
+      if (statsFilter === 'sprint') {
+        return filterTasksBySprint(tasks, sprints, selectedSprintId);
+      }
 
-    if (statsFilter === 'date') {
-      return tasks.filter((task) => {
-        const taskDate = new Date(task.createdAt).toISOString().split('T')[0];
-        return taskDate >= dateFrom && taskDate <= dateTo;
-      });
-    }
+      if (statsFilter === 'date') {
+        return tasks.filter((task) => {
+          const taskDate = new Date(task.createdAt).toISOString().split('T')[0];
+          return taskDate >= dateFrom && taskDate <= dateTo;
+        });
+      }
 
-    return tasks;
+      return tasks;
+    })();
+
+    const normalizedSearch = taskSearch.trim().toLowerCase();
+    if (!normalizedSearch) return baseTasks;
+
+    return baseTasks.filter((task) => task.title.toLowerCase().includes(normalizedSearch));
   })();
 
   const metrics = computePerformanceMetrics(filteredTasks, ['Ready for QA', 'Code Review']);
@@ -154,6 +162,8 @@ export const TasksView: React.FC<TasksViewProps> = ({
         setStatsFilter={setStatsFilter}
         selectedSprintId={selectedSprintId}
         setSelectedSprintId={setSelectedSprintId}
+        taskSearch={taskSearch}
+        setTaskSearch={setTaskSearch}
         sprints={sprints}
         dateFrom={dateFrom}
         setDateFrom={setDateFrom}

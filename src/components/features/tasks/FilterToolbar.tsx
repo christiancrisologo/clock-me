@@ -1,12 +1,15 @@
 import React from 'react';
 import { cn } from '../../../lib/utils';
 import { Sprint } from '../../../types';
+import { Search } from 'lucide-react';
 
 interface FilterToolbarProps {
   statsFilter: 'sprint' | 'date';
   setStatsFilter: (filter: 'sprint' | 'date') => void;
   selectedSprintId: string;
   setSelectedSprintId: (id: string) => void;
+  taskSearch: string;
+  setTaskSearch: (value: string) => void;
   sprints: Sprint[];
   dateFrom: string;
   setDateFrom: (date: string) => void;
@@ -19,6 +22,8 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
   setStatsFilter,
   selectedSprintId,
   setSelectedSprintId,
+  taskSearch,
+  setTaskSearch,
   sprints,
   dateFrom,
   setDateFrom,
@@ -27,6 +32,20 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
 }) => {
   return (
     <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4">
+
+      <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-1 sm:min-w-[240px]">
+        <div className="relative w-full">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={taskSearch}
+            onChange={(e) => setTaskSearch(e.target.value)}
+            placeholder="Task name"
+            className="w-full text-xs font-bold border border-slate-200 rounded-lg pl-9 pr-3 py-2 bg-white outline-none focus:border-brand-500 min-h-[44px] sm:min-h-auto"
+          />
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 w-full sm:w-auto">
         <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Filter by:</span>
         <div className="flex bg-slate-100 p-1 rounded-lg">
