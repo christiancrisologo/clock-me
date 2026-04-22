@@ -226,6 +226,80 @@ export const useSync = (
     }
   };
 
+  const getTaskFromRpcResult = (data: unknown): Task | null => {
+    if (!data) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row !== 'object') return null;
+    return fromSupabaseTaskRow(row as SupabaseTaskRow);
+  };
+
+  const startTaskTimerOnSupabase = async (taskId: string, status: string) => {
+    if (!(isSupabaseConfigured && navigator.onLine && autoSync && supabase && !isGuest)) return null;
+
+    try {
+      const { data, error } = await supabase.rpc('cm_start_task_timer', {
+        p_task_id: taskId,
+        p_user_id: userId,
+        p_status: status
+      });
+
+      if (error) {
+        setIsSupabaseOnline(false);
+        return null;
+      }
+
+      setIsSupabaseOnline(true);
+      return getTaskFromRpcResult(data);
+    } catch {
+      setIsSupabaseOnline(false);
+      return null;
+    }
+  };
+
+  const tickTaskTimerOnSupabase = async (taskId: string) => {
+    if (!(isSupabaseConfigured && navigator.onLine && autoSync && supabase && !isGuest)) return null;
+
+    try {
+      const { data, error } = await supabase.rpc('cm_tick_task_timer', {
+        p_task_id: taskId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        setIsSupabaseOnline(false);
+        return null;
+      }
+
+      setIsSupabaseOnline(true);
+      return getTaskFromRpcResult(data);
+    } catch {
+      setIsSupabaseOnline(false);
+      return null;
+    }
+  };
+
+  const stopTaskTimerOnSupabase = async (taskId: string) => {
+    if (!(isSupabaseConfigured && navigator.onLine && autoSync && supabase && !isGuest)) return null;
+
+    try {
+      const { data, error } = await supabase.rpc('cm_stop_task_timer', {
+        p_task_id: taskId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        setIsSupabaseOnline(false);
+        return null;
+      }
+
+      setIsSupabaseOnline(true);
+      return getTaskFromRpcResult(data);
+    } catch {
+      setIsSupabaseOnline(false);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (autoSync) {
       void syncWithSupabase();
@@ -238,6 +312,9 @@ export const useSync = (
     lastSyncTime,
     syncWithSupabase,
     pushTaskToSupabase,
-    deleteTaskFromSupabase
+    deleteTaskFromSupabase,
+    startTaskTimerOnSupabase,
+    tickTaskTimerOnSupabase,
+    stopTaskTimerOnSupabase
   };
 };

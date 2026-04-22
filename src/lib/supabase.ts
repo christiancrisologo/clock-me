@@ -46,6 +46,8 @@ export interface SupabaseTaskRow {
   resolved: string | null;
   codebase: string | null;
   story_points: number | null;
+  active_started_at: string | null;
+  active_status: string | null;
   user_id: string | null;
 }
 
@@ -109,6 +111,8 @@ export const toSupabaseTaskRow = (task: Task, userId?: string | null): SupabaseT
   resolved: task.resolved || null,
   codebase: task.codebase || null,
   story_points: task.storyPoints ?? null,
+  active_started_at: task.activeStartedAt || null,
+  active_status: task.activeStatus || null,
   user_id: userId || null
 });
 
@@ -139,6 +143,8 @@ export const fromSupabaseTaskRow = (row: SupabaseTaskRow): Task => ({
   resolved: row.resolved || undefined,
   codebase: row.codebase || undefined,
   storyPoints: row.story_points ?? undefined,
+  activeStartedAt: row.active_started_at || undefined,
+  activeStatus: row.active_status || undefined,
   userId: row.user_id || undefined
 });
 

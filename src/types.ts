@@ -39,6 +39,8 @@ export interface Task {
   resolved?: string;
   codebase?: string;
   storyPoints?: number;
+  activeStartedAt?: string;
+  activeStatus?: string;
   userId?: string; // User relationship
 }
 

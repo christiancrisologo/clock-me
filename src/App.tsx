@@ -58,6 +58,9 @@ export default function App({ userId, isGuest, userName }: AppProps) {
     pushTaskToSupabase?: (task: Task) => Promise<void>;
     deleteTaskFromSupabase?: (taskId: string) => Promise<void>;
     syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
+    startTaskTimerOnSupabase?: (taskId: string, status: string) => Promise<Task | null>;
+    tickTaskTimerOnSupabase?: (taskId: string) => Promise<Task | null>;
+    stopTaskTimerOnSupabase?: (taskId: string) => Promise<Task | null>;
   }>({});
 
   const taskHook = useTasks(syncHandlersRef.current, autoSync, userId);
@@ -103,7 +106,10 @@ export default function App({ userId, isGuest, userName }: AppProps) {
     lastSyncTime,
     syncWithSupabase,
     pushTaskToSupabase,
-    deleteTaskFromSupabase
+    deleteTaskFromSupabase,
+    startTaskTimerOnSupabase,
+    tickTaskTimerOnSupabase,
+    stopTaskTimerOnSupabase
   } = sync;
 
   // 3. Update the ref with current handlers from useSync
@@ -111,9 +117,19 @@ export default function App({ userId, isGuest, userName }: AppProps) {
     syncHandlersRef.current = {
       pushTaskToSupabase,
       deleteTaskFromSupabase,
-      syncWithSupabase
+      syncWithSupabase,
+      startTaskTimerOnSupabase,
+      tickTaskTimerOnSupabase,
+      stopTaskTimerOnSupabase
     };
-  }, [pushTaskToSupabase, deleteTaskFromSupabase, syncWithSupabase]);
+  }, [
+    pushTaskToSupabase,
+    deleteTaskFromSupabase,
+    syncWithSupabase,
+    startTaskTimerOnSupabase,
+    tickTaskTimerOnSupabase,
+    stopTaskTimerOnSupabase
+  ]);
 
   // Custom Timer Hook
   useTimer(activeTaskIds, setTasks);

@@ -7,6 +7,9 @@ export const useTasks = (
     pushTaskToSupabase?: (task: Task) => Promise<void>;
     deleteTaskFromSupabase?: (taskId: string) => Promise<void>;
     syncWithSupabase?: (forcePush?: boolean) => Promise<void>;
+    startTaskTimerOnSupabase?: (taskId: string, status: string) => Promise<Task | null>;
+    tickTaskTimerOnSupabase?: (taskId: string) => Promise<Task | null>;
+    stopTaskTimerOnSupabase?: (taskId: string) => Promise<Task | null>;
   } | null | undefined,
   autoSync: boolean,
   userId: string
@@ -51,6 +54,35 @@ export const useTasks = (
   useEffect(() => {
     localStorage.setItem(activeTaskStorageKey, JSON.stringify(activeTaskIds));
   }, [activeTaskIds, activeTaskStorageKey]);
+
+  useEffect(() => {
+    if (activeTaskIds.length === 0) return;
+
+    const heartbeat = window.setInterval(() => {
+      const tickTaskTimerOnSupabase = syncHandlers?.tickTaskTimerOnSupabase;
+      if (!tickTaskTimerOnSupabase) return;
+
+      activeTaskIds.forEach((taskId) => {
+        void tickTaskTimerOnSupabase(taskId).then((serverTask) => {
+          if (!serverTask) return;
+
+          setTasks((prev) => prev.map((task) => {
+            if (task.id !== taskId) return task;
+            return {
+              ...task,
+              totalSeconds: serverTask.totalSeconds,
+              phaseSeconds: serverTask.phaseSeconds,
+              updatedAt: serverTask.updatedAt,
+              activeStartedAt: serverTask.activeStartedAt,
+              activeStatus: serverTask.activeStatus
+            };
+          }));
+        });
+      });
+    }, 15000);
+
+    return () => window.clearInterval(heartbeat);
+  }, [activeTaskIds, syncHandlers?.tickTaskTimerOnSupabase]);
 
   const addTask = (taskData: Partial<Task>) => {
     const pts = taskData.estimatedPoints || 0;
@@ -161,6 +193,7 @@ export const useTasks = (
   const toggleTimer = async (taskId: string) => {
     const isActive = activeTaskIds.includes(taskId);
     if (isActive) {
+      const stopTaskTimerOnSupabase = syncHandlers?.stopTaskTimerOnSupabase;
       setTasks(prev => prev.map(t => {
         if (t.id === taskId) {
           const updatedTask = {
@@ -173,27 +206,48 @@ export const useTasks = (
               type: 'pause' as const
             }]
           };
-          syncHandlers?.pushTaskToSupabase?.(updatedTask);
           return updatedTask;
         }
         return t;
       }));
       setActiveTaskIds(prev => prev.filter(id => id !== taskId));
+
+      if (stopTaskTimerOnSupabase) {
+        const serverTask = await stopTaskTimerOnSupabase(taskId);
+        if (serverTask) {
+          setTasks((prev) => prev.map((task) => {
+            if (task.id !== taskId) return task;
+            return {
+              ...task,
+              totalSeconds: serverTask.totalSeconds,
+              phaseSeconds: serverTask.phaseSeconds,
+              updatedAt: serverTask.updatedAt,
+              activeStartedAt: serverTask.activeStartedAt,
+              activeStatus: serverTask.activeStatus
+            };
+          }));
+        }
+      }
     } else {
       if (autoSync) await syncHandlers?.syncWithSupabase?.();
+
+      const currentTask = tasks.find((task) => task.id === taskId);
+      if (!currentTask) return;
+
+      let nextStatus = currentTask.status;
+      const inProgressStatus = TASK_STATUSES.find(s => s.toLowerCase().includes('progress')) || TASK_STATUSES[1];
+
+      if (currentTask.classification === 'sprintly' && (currentTask.status === 'Code Review' || currentTask.status === 'Testing')) {
+        nextStatus = inProgressStatus;
+      } else if (currentTask.status === TASK_STATUSES[0]) {
+        nextStatus = inProgressStatus;
+      }
+
+      const startTaskTimerOnSupabase = syncHandlers?.startTaskTimerOnSupabase;
       
       setActiveTaskIds(prev => [...prev, taskId]);
       setTasks(prev => prev.map(t => {
         if (t.id === taskId) {
-          let nextStatus = t.status;
-          const inProgressStatus = TASK_STATUSES.find(s => s.toLowerCase().includes('progress')) || TASK_STATUSES[1];
-          
-          if (t.classification === 'sprintly' && (t.status === 'Code Review' || t.status === 'Testing')) {
-            nextStatus = inProgressStatus;
-          } else if (t.status === TASK_STATUSES[0]) {
-            nextStatus = inProgressStatus;
-          }
-
           const newLog: TaskLog = {
             timestamp: Date.now(),
             fromStatus: t.status,
@@ -205,13 +259,37 @@ export const useTasks = (
             ...t, 
             status: nextStatus,
             updatedAt: Date.now(),
-            logs: [...(t.logs || []), newLog]
+            logs: [...(t.logs || []), newLog],
+            activeStartedAt: new Date().toISOString(),
+            activeStatus: nextStatus
           };
-          syncHandlers?.pushTaskToSupabase?.(updatedTask);
           return updatedTask;
         }
         return t;
       }));
+
+      if (startTaskTimerOnSupabase) {
+        const serverTask = await startTaskTimerOnSupabase(taskId, nextStatus);
+        if (serverTask) {
+          setTasks((prev) => prev.map((task) => {
+            if (task.id !== taskId) return task;
+            return {
+              ...task,
+              updatedAt: serverTask.updatedAt,
+              activeStartedAt: serverTask.activeStartedAt,
+              activeStatus: serverTask.activeStatus
+            };
+          }));
+        }
+      } else {
+        syncHandlers?.pushTaskToSupabase?.({
+          ...currentTask,
+          status: nextStatus,
+          updatedAt: Date.now(),
+          activeStartedAt: new Date().toISOString(),
+          activeStatus: nextStatus
+        });
+      }
     }
   };
 
